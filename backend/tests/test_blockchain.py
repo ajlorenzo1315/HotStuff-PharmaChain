@@ -27,9 +27,7 @@ def environment():
         )
     }
 
-    blockchain = Blockchain(
-        LedgerState(organizations)
-    )
+    blockchain = Blockchain(LedgerState(organizations))
 
     return blockchain, private_key
 
@@ -71,9 +69,7 @@ def test_add_valid_block(environment):
     assert block_hash in blockchain.blocks
     assert blockchain.committed_height == 0
 
-    assert "LOT-2026-001" in blockchain.get_state(
-        block_hash
-    ).batches
+    assert "LOT-2026-001" in blockchain.get_state(block_hash).batches
 
     assert blockchain.committed_state.batches == {}
 

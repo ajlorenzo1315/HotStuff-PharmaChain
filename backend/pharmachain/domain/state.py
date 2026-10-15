@@ -1,4 +1,3 @@
-
 from dataclasses import dataclass, field, replace
 
 from .crypto import verify_signature
@@ -33,7 +32,7 @@ class LedgerState:
     def apply(self, tx: Transaction) -> "LedgerState":
         new_state = self.clone()
         new_state._validate_and_apply(tx)
-        # Un lider puede proponer un bloque que posteriormente sea rechazado. 
+        # Un lider puede proponer un bloque que posteriormente sea rechazado.
         # Por eso validar una transacción no debe modificar inmediatamente el estado confirmado.
         return new_state
 

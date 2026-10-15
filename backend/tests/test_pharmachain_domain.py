@@ -1,4 +1,3 @@
-
 import pytest
 
 from pharmachain.domain.crypto import generate_keypair
@@ -7,8 +6,8 @@ from pharmachain.domain.models import (
     OrganizationRole,
     TransactionType,
 )
-from pharmachain.domain.transactions import Transaction
 from pharmachain.domain.state import LedgerState, ValidationError
+from pharmachain.domain.transactions import Transaction
 
 
 @pytest.fixture
@@ -53,9 +52,7 @@ def register_transaction(private_key):
 def test_register_batch(environment):
     state = environment["state"]
 
-    tx = register_transaction(
-        environment["manufacturer_private"]
-    )
+    tx = register_transaction(environment["manufacturer_private"])
 
     new_state = state.apply(tx)
 
@@ -67,9 +64,7 @@ def test_register_batch(environment):
 def test_transfer_batch(environment):
     state = environment["state"]
 
-    state = state.apply(
-        register_transaction(environment["manufacturer_private"])
-    )
+    state = state.apply(register_transaction(environment["manufacturer_private"]))
 
     transfer = Transaction(
         tx_type=TransactionType.TRANSFER_BATCH,
@@ -88,18 +83,14 @@ def test_transfer_batch(environment):
 
 
 def test_invalid_signature(environment):
-    tx = register_transaction(
-        environment["distributor_private"]
-    )
+    tx = register_transaction(environment["distributor_private"])
 
     with pytest.raises(ValidationError, match="Invalid signature"):
         environment["state"].apply(tx)
 
 
 def test_duplicate_transaction(environment):
-    tx = register_transaction(
-        environment["manufacturer_private"]
-    )
+    tx = register_transaction(environment["manufacturer_private"])
 
     state = environment["state"].apply(tx)
 

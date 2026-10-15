@@ -1,9 +1,9 @@
 from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PrivateKey,
     Ed25519PublicKey,
 )
-from cryptography.hazmat.primitives import serialization
 
 
 def generate_keypair() -> tuple[str, str]:
@@ -24,9 +24,7 @@ def generate_keypair() -> tuple[str, str]:
 
 
 def sign_message(private_key_hex: str, message: bytes) -> str:
-    private_key = Ed25519PrivateKey.from_private_bytes(
-        bytes.fromhex(private_key_hex)
-    )
+    private_key = Ed25519PrivateKey.from_private_bytes(bytes.fromhex(private_key_hex))
 
     return private_key.sign(message).hex()
 
@@ -37,9 +35,7 @@ def verify_signature(
     signature_hex: str,
 ) -> bool:
     try:
-        public_key = Ed25519PublicKey.from_public_bytes(
-            bytes.fromhex(public_key_hex)
-        )
+        public_key = Ed25519PublicKey.from_public_bytes(bytes.fromhex(public_key_hex))
 
         public_key.verify(
             bytes.fromhex(signature_hex),

@@ -1,11 +1,9 @@
 import hashlib
 import json
-
 from dataclasses import dataclass
 from typing import Any
 
 from pharmachain.domain.transactions import Transaction
-
 
 GENESIS_PARENT = "0" * 64
 
@@ -44,9 +42,7 @@ class Block:
 
     @property
     def block_hash(self) -> str:
-        return hashlib.sha256(
-            canonical_json(self.payload())
-        ).hexdigest()
+        return hashlib.sha256(canonical_json(self.payload())).hexdigest()
 
     @classmethod
     def genesis(cls) -> "Block":

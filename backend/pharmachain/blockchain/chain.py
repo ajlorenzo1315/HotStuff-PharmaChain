@@ -77,9 +77,7 @@ class Blockchain:
             for tx in block.transactions:
                 state = state.apply(tx)
         except (ValidationError, ValueError) as exc:
-            raise BlockchainError(
-                f"Invalid block transaction: {exc}"
-            ) from exc
+            raise BlockchainError(f"Invalid block transaction: {exc}") from exc
 
         self.blocks[block_hash] = block
         self.states[block_hash] = state
@@ -100,9 +98,7 @@ class Blockchain:
             block = self.blocks[current_hash]
 
             if block.height <= self.blocks[self.committed_tip].height:
-                raise BlockchainError(
-                    "Target does not extend committed chain"
-                )
+                raise BlockchainError("Target does not extend committed chain")
 
             path.append(current_hash)
             current_hash = block.parent_hash

@@ -1,11 +1,9 @@
-
 import hashlib
 import json
-
 from dataclasses import dataclass, replace
 
-from .models import TransactionType
 from .crypto import sign_message
+from .models import TransactionType
 
 
 @dataclass(frozen=True)
