@@ -123,6 +123,9 @@ class Blockchain:
 
         return path
 
+    def is_committed(self, block_hash: str) -> bool:
+        return block_hash in self.committed
+
     @property
     def committed_state(self) -> LedgerState:
         return self.get_state(self.committed_tip)

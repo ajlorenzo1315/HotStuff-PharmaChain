@@ -1,0 +1,3 @@
+[submodule "backend/protocols/relab-hotstuff"]
+	path = backend/protocols/relab-hotstuff
+	url = https://github.com/relab/hotstuff.git

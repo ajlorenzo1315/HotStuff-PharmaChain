@@ -54,11 +54,11 @@ def test_transaction_reaches_block_tree():
 
     assert engine.snapshot()["known_blocks"] == 2
 
-    # El bloque todavía NO está confirmado.
+    # El bloque todavia NO está confirmado.
     assert engine.snapshot()["committed_height"] == 0
     assert engine.snapshot()["batches"] == {}
 
-    # Sin embargo, el estado provisional sí contiene el lote.
+    # Sin embargo, el estado provisional si contiene el lote.
     proposed_hash = events[0].block_hash
 
     provisional_state = engine.blockchain.get_state(proposed_hash)
