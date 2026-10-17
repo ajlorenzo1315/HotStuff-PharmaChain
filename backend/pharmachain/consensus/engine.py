@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from pharmachain.blockchain.chain import Blockchain
@@ -17,11 +18,15 @@ class RoundResult:
     committed: tuple[str, ...]
 
 
+EventCallback = Callable[[dict], None]
+
+
 class HotStuffEngine:
     def __init__(
         self,
         initial_state: LedgerState,
         validator_count: int = 4,
+        on_event: EventCallback | None = None,
     ):
         if validator_count < 4:
             raise ValueError("At least four validators required")
@@ -49,6 +54,26 @@ class HotStuffEngine:
         self.high_qc_hash = self.blockchain.genesis.block_hash
 
         self.view = 1
+        self.on_event = on_event
+        self.event_history: list[dict] = []
+
+    def emit(
+        self,
+        event_type: str,
+        **details: object,
+    ) -> None:
+        """Record a consensus event and notify the observer."""
+
+        event = {
+            "type": event_type,
+            "view": self.view,
+            **details,
+        }
+
+        self.event_history.append(event)
+
+        if self.on_event is not None:
+            self.on_event(event)
 
     def leader(self) -> Validator:
         index = (self.view - 1) % len(self.validators)
@@ -99,24 +124,35 @@ class HotStuffEngine:
         return parent_qc.view > validator.locked_view
 
     def _update_locks(self, block_hash: str) -> None:
-        """
-        En esta versión, los validadores actualizan su
-        bloqueo al observar la cadena certificada.
-        """
+        """Update validator locks when the parent has a QC."""
+
         block = self.blockchain.get_block(block_hash)
 
         parent_hash = block.parent_hash
+
+        # Retrieve the certificate of the parent block.
         parent_qc = self.certificates.get(parent_hash)
 
         if parent_qc is None:
             return
 
-        # Solo se actualiza si el padre está certificado.
         for validator in self.validators:
-            if validator.active:
-                validator.update_lock(
-                    parent_hash,
-                    parent_qc.view,
+            if not validator.active:
+                continue
+
+            previous_view = validator.locked_view
+
+            validator.update_lock(
+                parent_hash,
+                parent_qc.view,
+            )
+
+            if validator.locked_view > previous_view:
+                self.emit(
+                    "LOCK_UPDATED",
+                    validator=validator.validator_id,
+                    block_hash=validator.locked_block_hash,
+                    locked_view=validator.locked_view,
                 )
 
     def _try_commit(self, block_hash: str) -> tuple[str, ...]:
@@ -160,6 +196,13 @@ class HotStuffEngine:
         current_view = self.view
         leader = self.leader()
 
+        self.emit(
+            "NEW_VIEW",
+            leader=leader.validator_id,
+            quorum=self.quorum,
+            validator_count=len(self.validators),
+        )
+
         if not leader.active:
             self.view += 1
             return RoundResult(
@@ -182,12 +225,29 @@ class HotStuffEngine:
 
         block_hash = self.blockchain.add_block(block)
 
+        self.emit(
+            "BLOCK_PROPOSED",
+            leader=leader.validator_id,
+            block_hash=block_hash,
+            parent_hash=parent_hash,
+            height=block.height,
+            transaction_count=len(block.transactions),
+        )
+
         votes = []
 
         for validator in self.validators:
             safe = self.is_safe(
                 validator,
                 parent_hash,
+            )
+
+            self.emit(
+                "VALIDATE_PROPOSAL",
+                validator=validator.validator_id,
+                block_hash=block_hash,
+                safe=safe,
+                active=validator.active,
             )
 
             vote = validator.vote(
@@ -199,6 +259,32 @@ class HotStuffEngine:
             if vote is not None:
                 votes.append(vote)
 
+                self.emit(
+                    "VOTE_CAST",
+                    validator=validator.validator_id,
+                    block_hash=block_hash,
+                    signature=vote.signature,
+                    votes_received=len(votes),
+                    quorum=self.quorum,
+                )
+
+            else:
+                if not validator.active:
+                    reason = "VALIDATOR_OFFLINE"
+                elif current_view in validator.voted_views:
+                    reason = "ALREADY_VOTED"
+                elif not safe:
+                    reason = "UNSAFE_PROPOSAL"
+                else:
+                    reason = "VOTE_NOT_PRODUCED"
+
+                self.emit(
+                    "VOTE_REJECTED",
+                    validator=validator.validator_id,
+                    block_hash=block_hash,
+                    reason=reason,
+                )
+
         qc_formed = False
         committed = ()
 
@@ -209,17 +295,57 @@ class HotStuffEngine:
                 votes=tuple(votes),
             )
 
-            if qc.verify(self.public_keys, self.quorum):
-                self.certificates[block_hash] = qc
-                self.high_qc = qc
-                self.high_qc_hash = block_hash
+        if qc.verify(self.public_keys, self.quorum):
+            self.certificates[block_hash] = qc
+            self.high_qc = qc
+            self.high_qc_hash = block_hash
 
-                qc_formed = True
+            qc_formed = True
 
-                self._update_locks(block_hash)
-                committed = self._try_commit(block_hash)
+            self.emit(
+                "QC_FORMED",
+                block_hash=block_hash,
+                votes=len(qc.votes),
+                quorum=self.quorum,
+                validators=[vote.validator_id for vote in qc.votes],
+            )
+
+            self._update_locks(block_hash)
+            committed = self._try_commit(block_hash)
+
+            for committed_hash in committed:
+                self.emit(
+                    "BLOCK_COMMITTED",
+                    block_hash=committed_hash,
+                    committed_height=(self.blockchain.committed_height),
+                )
+        # Para registrar los bloqueos, entra en `_update_locks()`:
+        for validator in self.validators:
+            if validator.active:
+                previous_view = validator.locked_view
+
+                validator.update_lock(
+                    parent_hash,
+                    validator.view,
+                )
+
+                if validator.locked_view > previous_view:
+                    self.emit(
+                        "LOCK_UPDATED",
+                        validator=validator.validator_id,
+                        block_hash=validator.locked_block_hash,
+                        locked_view=validator.locked_view,
+                    )
 
         self.view += 1
+
+        if not qc_formed:
+            self.emit(
+                "QUORUM_NOT_REACHED",
+                block_hash=block_hash,
+                votes=len(votes),
+                quorum=self.quorum,
+            )
 
         return RoundResult(
             view=current_view,
