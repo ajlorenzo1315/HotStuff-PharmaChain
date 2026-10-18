@@ -9,6 +9,7 @@ de nodos que se incorporan tarde.
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass, field
 
 from pharmachain.blockchain.block import Block
@@ -80,7 +81,6 @@ class DistributedHotStuff:
             raise ValueError("At least four validators required")
 
         # El valor 2f+1 sigue siendo correcto cuando n=3f+1
-        self.f = (validator_count - 1) // 3
         self.quorum = validator_count - self.f
 
         self.view = 1
@@ -559,17 +559,22 @@ class DistributedHotStuff:
             self._record("SYNC_REJECTED", node=recipient, reason="invalid_ancestry")
             return
         node = runtime.node
+        # Validate the entire candidate chain without mutating local state.
+        candidate_chain = deepcopy(node.blockchain)
         for block in response.blocks:
-            if block.block_hash in node.blockchain.blocks:
-                continue
             if block.proposer_id != self.leader_id(block.view):
                 self._record("SYNC_REJECTED", node=recipient, reason="invalid_proposer")
                 return
-            # receive_block applies the existing chain/state validation.
-            if not node.receive_block(block):
-                self._record("SYNC_REJECTED", node=recipient, reason="invalid_block")
-                return
-        # Do not trust the peer's commit height. Verify each QC locally.
+            if block.block_hash not in candidate_chain.blocks:
+                try:
+                    candidate_chain.add_block(block)
+                except Exception:
+                    self._record(
+                        "SYNC_REJECTED", node=recipient, reason="invalid_block"
+                    )
+                    return
+
+        # Validate every QC against the candidate blocks before accepting any.
         block_hashes = {block.block_hash for block in response.blocks}
         seen_qcs: set[str] = set()
         for qc in response.certificates:
@@ -580,10 +585,12 @@ class DistributedHotStuff:
             if not qc.verify(self.public_keys, self.quorum):
                 self._record("SYNC_REJECTED", node=recipient, reason="invalid_qc")
                 return
-            block = node.blockchain.blocks[qc.block_hash]
-            if block.view != qc.view:
+            if candidate_chain.blocks[qc.block_hash].view != qc.view:
                 self._record("SYNC_REJECTED", node=recipient, reason="qc_view_mismatch")
                 return
+
+        # Commit validated candidate data only after all checks succeed.
+        node.blockchain = candidate_chain
         for qc in sorted(response.certificates, key=lambda item: item.view):
             node.receive_qc(qc)
             self._update_chain(node, qc.block_hash)
