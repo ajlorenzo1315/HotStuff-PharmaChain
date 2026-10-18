@@ -14,6 +14,7 @@
 <div class="stats"><div class="stat"><small>Vista global</small><strong id="view">—</strong></div><div class="stat"><small>Líder esperado</small><strong id="leader">—</strong></div><div class="stat"><small>Cuórum</small><strong id="quorum">—</strong></div><div class="stat"><small>Última ronda</small><strong id="last">—</strong></div></div>
 <div id="nodes" class="layout"></div>
 <section class="panel"><h2>Laboratorio de ataques bizantinos</h2><p class="muted">Cada escenario se ejecuta en una red aislada. El resultado es una comprobación automática, no una garantía formal de seguridad.</p><div class="toolbar"><select id="scenario" aria-label="Escenario de ataque" style="background:#243b5d;color:#fff;border:1px solid #426188;border-radius:9px;padding:10px"></select><button class="primary" id="attack">Ejecutar escenario</button></div><div id="attackResult" role="status" class="muted">Selecciona un escenario para ver la evidencia.</div><div id="attackEvents" style="max-height:260px;overflow:auto;font-family:monospace;font-size:12px"></div></section>
+<section class="panel"><h2>Auditoría de safety: commits incompatibles</h2><p class="muted">Compara los prefijos confirmados de todos los validadores. El experimento de conflicto artificial prueba el detector, no una vulnerabilidad de HotStuff.</p><div class="toolbar"><button id="safetyCheck">Auditar red actual</button><button id="safetyConflict">Inyectar conflicto de prueba</button><button class="primary" id="safetyFork">Simular líder equivocado (dos ramas)</button></div><pre id="safetyResult" style="white-space:pre-wrap;overflow-wrap:anywhere" role="status">Sin ejecutar</pre></section>
 <section class="panel"><h2>Registro de eventos</h2><div id="events"></div></section>
 <p><small>Entorno educativo: sin transacciones farmacéuticas en este panel; los botones ejecutan operaciones del simulador en memoria. No exponer este servidor a Internet.</small></p>
 <script>
@@ -27,6 +28,11 @@ async function loadAttacks(){try{const r=await fetch('/api/attacks');if(!r.ok)th
 async function executeAttack(){if(busy)return;busy=true;$('attack').disabled=true;$('attackResult').textContent='Ejecutando experimento…';$('attackEvents').replaceChildren();try{const r=await fetch('/api/attacks/'+encodeURIComponent($('scenario').value),{method:'POST'});const data=await r.json();if(!r.ok)throw Error(data.detail||'Error del escenario');$('attackResult').textContent=`${data.passed?'✓ PRUEBA SUPERADA':'✗ PRUEBA FALLIDA'} — ${data.observation}. Esperado: ${data.expected}`;for(const e of data.events){$('attackEvents').append(el('div','event',`${e.event} ${JSON.stringify(e)}`));}}catch(e){$('attackResult').textContent='Error: '+e.message;}finally{busy=false;$('attack').disabled=false;}}
 $('attack').onclick=executeAttack;loadAttacks();
 $('step').onclick=()=>api('/round',{});$('reset').onclick=()=>api('/reset',{});$('refresh').onclick=()=>api('');api('');
+
+async function safetyRequest(path,method='GET'){const out=$('safetyResult');out.textContent='Analizando…';try{const response=await fetch(path,{method});const data=await response.json();if(!response.ok)throw Error(data.detail||`HTTP ${response.status}`);out.textContent=JSON.stringify(data,null,2);}catch(error){out.textContent='Error: '+error.message;}}
+$('safetyCheck').onclick=()=>safetyRequest('/api/safety');
+$('safetyConflict').onclick=()=>safetyRequest('/api/safety/injected-conflict','POST');
+$('safetyFork').onclick=()=>safetyRequest('/api/safety/equivocation','POST');
 </script>
 </body>
 </html>

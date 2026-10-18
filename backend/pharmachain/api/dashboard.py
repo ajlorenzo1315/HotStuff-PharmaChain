@@ -14,6 +14,10 @@ from pydantic import BaseModel
 
 from pharmachain.api.attacks import SCENARIOS, run_scenario
 from pharmachain.consensus.distributed import DistributedHotStuff
+from pharmachain.consensus.safety import (
+    audit_committed_safety,
+    demonstrate_conflict_detection,
+)
 from pharmachain.domain.state import LedgerState
 
 app = FastAPI(title="PharmaChain · Distributed HotStuff Dashboard")
@@ -146,3 +150,25 @@ def attack_run(scenario: str):
             return run_scenario(scenario)
         except RuntimeError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.get("/api/safety")
+def safety_status():
+    with _lock:
+        return audit_committed_safety(_simulator())
+
+
+@app.post("/api/safety/injected-conflict")
+def safety_injected_conflict():
+    return demonstrate_conflict_detection()
+
+
+@app.post("/api/safety/equivocation")
+def safety_equivocation():
+    """Run an isolated Byzantine-leader fork experiment."""
+    from pharmachain.api.fork_experiment import run_fork_experiment
+
+    try:
+        return run_fork_experiment()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
