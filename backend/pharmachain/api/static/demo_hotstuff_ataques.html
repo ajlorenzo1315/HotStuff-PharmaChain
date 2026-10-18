@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HotStuff | Simulación educativa</title>
+    <style>
+        :root {
+            --bg: #0c1423;
+            --card: #14243b;
+            --card2: #1a3d66;
+            --text: #f2f6fb;
+            --muted: #a8b8ca;
+            --orange: #f59d53;
+            --cyan: #5be1d1;
+            --red: #ff7180;
+            --line: #3b526d
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            background: radial-gradient(circle at 20% 4%, #203653 0, transparent 35%), var(--bg);
+            color: var(--text);
+            font: 16px/1.5 system-ui, -apple-system, Segoe UI, sans-serif
+        }
+
+        .wrap {
+            max-width: 1220px;
+            margin: auto;
+            padding: 25px 24px 42px
+        }
+
+        .kicker {
+            color: var(--orange);
+            letter-spacing: .16em;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase
+        }
+
+        h1 {
+            font-size: clamp(29px, 4vw, 44px);
+            letter-spacing: -.04em;
+            margin: 5px 0 2px
+        }
+
+        header p {
+            margin: 3px 0 18px;
+            color: var(--muted)
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap
+        }
+
+        .toolbar {
+            background: var(--card);
+            padding: 17px;
+            border: 1px solid var(--line);
+            border-radius: 17px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap
+        }
+
+        label {
+            font-weight: 700;
+            font-size: 14px;
+            color: #d5e4f1
+        }
+
+        select {
+            background: var(--card2);
+            border: 1px solid #54718d;
+            border-radius: 10px;
+            color: white;
+            padding: 12px;
+            font: inherit;
+            max-width: 100%;
+            flex: 1;
+            min-width: 230px
+        }
+
+        button {
+            cursor: pointer;
+            background: var(--orange);
+            border: 0;
+            padding: 12px 19px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 800;
+            color: #172337
+        }
+
+        button:hover {
+            filter: brightness(1.09)
+        }
+
+        button:disabled {
+            filter: grayscale(.7);
+            opacity: .4;
+            cursor: not-allowed
+        }
+
+        button.secondary {
+            background: #2b435d;
+            color: white
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1.32fr .8fr;
+            gap: 16px;
+            margin-top: 16px
+        }
+
+        .panel {
+            background: rgba(20, 36, 59, .94);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 19px;
+            min-width: 0
+        }
+
+        .panel h2 {
+            font-size: 18px;
+            margin: 0 0 10px
+        }
+
+        .dim {
+            color: var(--muted)
+        }
+
+        .network {
+            width: 100%;
+            display: block;
+            max-height: 345px
+        }
+
+        .legend {
+            display: flex;
+            gap: 17px;
+            flex-wrap: wrap;
+            font-size: 13px;
+            color: #c8d7e4
+        }
+
+        .dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 6px
+        }
+
+        .stat {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px
+        }
+
+        .value {
+            font-size: 36px;
+            font-weight: 900;
+            letter-spacing: -.05em
+        }
+
+        .statbox {
+            background: #1b304a;
+            border-radius: 13px;
+            padding: 15px
+        }
+
+        .statbox small {
+            display: block;
+            color: #9fb7d0
+        }
+
+        .status {
+            margin-top: 13px;
+            padding: 12px;
+            border-radius: 12px;
+            background: #143b3c;
+            color: #8df2e3;
+            font-weight: 700
+        }
+
+        .status.bad {
+            background: #472636;
+            color: #ffadb4
+        }
+
+        .progress {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 5px;
+            margin: 0 0 18px
+        }
+
+        .progress div {
+            text-align: center;
+            border-radius: 10px;
+            background: #233951;
+            padding: 9px 4px;
+            color: #b7c9dc;
+            font-size: 12px;
+            font-weight: 700
+        }
+
+        .progress .on {
+            background: var(--orange);
+            color: #132339
+        }
+
+        .phase {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 4px
+        }
+
+        .detail {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #d1deea;
+            min-height: 100px
+        }
+
+        .events {
+            max-height: 240px;
+            overflow: auto;
+            background: #101e30;
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 14px
+        }
+
+        .ev {
+            border-left: 3px solid var(--cyan);
+            padding-left: 10px;
+            margin-bottom: 10px
+        }
+
+        .ev.miss {
+            border-left-color: var(--red)
+        }
+
+        .footnote {
+            font-size: 13px;
+            color: #a8b8ca;
+            max-width: 900px;
+            margin-top: 15px
+        }
+
+        .pill {
+            display: inline-block;
+            color: #ffe0c8;
+            background: #533522;
+            border-radius: 999px;
+            font-size: 12px;
+            padding: 3px 10px;
+            font-weight: 700
+        }
+
+        .footergrid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 16px
+        }
+
+        .footergrid p {
+            color: #bdcede;
+            font-size: 14px;
+            margin: 4px 0
+        }
+
+        svg text {
+            font-family: system-ui, sans-serif
+        }
+
+        .nodetext {
+            fill: white;
+            font-size: 24px;
+            font-weight: 800
+        }
+
+        .nodelabel {
+            fill: #d0e0f0;
+            font-size: 15px
+        }
+
+        .badlabel {
+            fill: #ffb4b9;
+            font-size: 12px
+        }
+
+        @media(max-width:860px) {
+
+            .dashboard,
+            .footergrid {
+                grid-template-columns: 1fr
+            }
+
+            .wrap {
+                padding: 17px
+            }
+
+            .stat {
+                grid-template-columns: 1fr 1fr
+            }
+        }
+
+        /* Ampliación: laboratorio de ataques y recuperación */
+        .toolbar select {
+            min-width: 280px;
+        }
+
+        .tophelp {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 9px;
+        }
+
+        .labpanel {
+            margin-top: 16px;
+        }
+
+        .labgrid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 13px;
+        }
+
+        .labcard {
+            padding: 14px 15px;
+            background: #10263d;
+            border: 1px solid #33516d;
+            border-radius: 13px;
+        }
+
+        .labcard h3 {
+            margin: 0 0 5px;
+            font-size: 14px;
+            color: #94e4e0;
+        }
+
+        .labcard p {
+            margin: 0;
+            color: #d4e2ee;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .attackhead {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .attackhead h2 {
+            margin: 0;
+        }
+
+        .tag {
+            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: #24415e;
+            color: #dce9f5;
+            font-weight: 750;
+        }
+
+        .tag.alert {
+            background: #5d3040;
+            color: #ffbbc3;
+        }
+
+        .assessment {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 13px;
+        }
+
+        .assessment span {
+            border-radius: 9px;
+            padding: 7px 10px;
+            font-size: 12px;
+            font-weight: 750;
+        }
+
+        .assessment .safe {
+            background: #123f42;
+            color: #8cf4dd;
+        }
+
+        .assessment .stalled {
+            background: #542b36;
+            color: #ffd0d4;
+        }
+
+        .assessment .wait {
+            background: #4b3b23;
+            color: #ffe2ac;
+        }
+
+        .votegrid {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 12px 0 0;
+        }
+
+        .votecard {
+            flex: 1;
+            min-width: 170px;
+            border-radius: 12px;
+            padding: 11px 13px;
+            background: #1b304a;
+        }
+
+        .votecard strong {
+            display: block;
+            font-size: 20px;
+        }
+
+        .votecard small {
+            color: #c4d4e3;
+            font-size: 12px;
+        }
+
+        .votecard.noqc {
+            border: 1px solid #ff7180;
+        }
+
+        .votecard.hasqc {
+            border: 1px solid #5be1d1;
+        }
+
+        #restore {
+            background: #5be1d1;
+            color: #0c2832;
+        }
+
+        #restore[hidden],
+        #branches[hidden] {
+            display: none;
+        }
+
+        .link-broken {
+            stroke: #ff7180;
+            stroke-dasharray: 8 9;
+            stroke-width: 4;
+            opacity: .8;
+        }
+
+        .link-live {
+            stroke: #3d6784;
+            stroke-dasharray: 7 8;
+            stroke-width: 3;
+            opacity: .95;
+        }
+
+        .traffic {
+            stroke-width: 5;
+            stroke-linecap: round;
+            fill: none;
+            opacity: .95;
+        }
+
+        .arrow-flow {
+            animation: flowDash 1.1s linear infinite;
+            stroke-dasharray: 9 8;
+        }
+
+        @keyframes flowDash {
+            to {
+                stroke-dashoffset: -34;
+            }
+        }
+
+        .networkhint {
+            fill: #a8bed3;
+            font-size: 13px;
+        }
+
+        .notice {
+            padding: 11px 14px;
+            border-left: 3px solid var(--orange);
+            color: #cbd9e7;
+            background: #14243b;
+            font-size: 13px;
+            border-radius: 7px;
+            margin-top: 15px;
+        }
+
+        .status.warn {
+            background: #4b3727;
+            color: #ffe0b1;
+        }
+
+        button:focus-visible,
+        select:focus-visible {
+            outline: 3px solid #5be1d1;
+            outline-offset: 3px;
+        }
+
+        @media(max-width:860px) {
+            .labgrid {
+                grid-template-columns: 1fr;
+            }
+
+            .toolbar select {
+                width: 100%;
+            }
+        }
+
+        @media(prefers-reduced-motion:reduce) {
+            .arrow-flow {
+                animation: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap"><nav style="margin-bottom:14px"><a href="/" style="color:#5be1d1;font-weight:800;text-decoration:none">← Volver a PharmaChain · Demo farmacéutica</a></nav>
+        <header>
+            <h1>HotStuff Demo</h1>
+            <p><strong>HotStuff</strong> · 4 validadores · 3 votos para formar un QC</p>
+        </header>
+        <div class="toolbar">
+            <label for="scenario">Escenario:</label>
+            <select id="scenario" aria-label="Elegir escenario de HotStuff">
+                <optgroup label="Funcionamiento y fallos">
+                    <option value="normal">1 · Funcionamiento normal</option>
+                    <option value="one">2 · Un validador desconectado (D)</option>
+                    <option value="two">3 · Dos validadores desconectados (C y D)</option>
+                    <option value="leader">4 · El líder A no responde: cambio de vista</option>
+                </optgroup>
+                <optgroup label="Ataques de seguridad">
+                    <option value="equivocation">5 · Líder malicioso: dos bloques incompatibles</option>
+                    <option value="byzantine">6 · Validador bizantino: voto manipulado</option>
+                    <option value="dos">7 · DoS / jamming: votos que no llegan</option>
+                    <option value="partition">8 · Partición de red: dos grupos de 2</option>
+                </optgroup>
+            </select>
+            <button id="next" type="button">Siguiente paso →</button>
+            <button class="secondary" id="reset" type="button">↺ Reiniciar</button>
+            <button id="restore" type="button" hidden>Restablecer comunicaciones</button>
+        </div>
+        <div class="tophelp">Elige un escenario y avanza paso a paso. En DoS, partición o desconexión de dos nodos
+            puedes restaurar la comunicación para continuar.</div>
+        <div class="dashboard">
+            <section class="panel">
+                <h2>Red de validadores <span id="viewname" class="pill">Vista 1</span></h2>
+                <svg class="network" viewBox="0 0 610 355" role="img"
+                    aria-label="Red de cuatro validadores con enlaces, mensajes y estados de ataque">
+                    <defs>
+                        <marker id="pointCyan" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+                            <path d="M0 0 L7 3.5 L0 7z" fill="#5be1d1" />
+                        </marker>
+                        <marker id="pointOrange" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+                            <path d="M0 0 L7 3.5 L0 7z" fill="#f59d53" />
+                        </marker>
+                        <marker id="pointRed" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+                            <path d="M0 0 L7 3.5 L0 7z" fill="#ff7180" />
+                        </marker>
+                    </defs>
+                    <g id="networkLinks"></g>
+                    <g id="arrowLines"></g>
+                    <g id="nodeA" transform="translate(305 80)">
+                        <circle r="47" fill="#f59d53" stroke="#ffd7a5" stroke-width="3" />
+                        <text class="nodetext" text-anchor="middle" dy="9">A</text>
+                        <text class="nodelabel" text-anchor="middle" y="66" id="roleA">Líder</text>
+                    </g>
+                    <g id="nodeB" transform="translate(116 259)">
+                        <circle r="47" fill="#194b70" stroke="#6493b9" stroke-width="3" />
+                        <text class="nodetext" text-anchor="middle" dy="9">B</text>
+                        <text class="nodelabel" text-anchor="middle" y="66" id="roleB">Validador</text>
+                    </g>
+                    <g id="nodeC" transform="translate(305 259)">
+                        <circle r="47" fill="#194b70" stroke="#6493b9" stroke-width="3" />
+                        <text class="nodetext" text-anchor="middle" dy="9">C</text>
+                        <text class="nodelabel" text-anchor="middle" y="66" id="roleC">Validador</text>
+                    </g>
+                    <g id="nodeD" transform="translate(494 259)">
+                        <circle r="47" fill="#194b70" stroke="#6493b9" stroke-width="3" />
+                        <text class="nodetext" text-anchor="middle" dy="9">D</text>
+                        <text class="nodelabel" text-anchor="middle" y="66" id="roleD">Validador</text>
+                    </g>
+                    <text id="networkNote" class="networkhint" x="305" y="346" text-anchor="middle"></text>
+                </svg>
+                <div class="legend">
+                    <span><span class="dot" style="background:#f59d53"></span>Líder honesto</span>
+                    <span><span class="dot" style="background:#45c9b8"></span>Validador honesto</span>
+                    <span><span class="dot" style="background:#ee6879"></span>Fallido / malicioso</span>
+                    <span><span class="dot" style="background:#b38df3"></span>Red separada / enlace bloqueado</span>
+                </div>
+            </section>
+            <section class="panel">
+                <h2>Estado del consenso</h2>
+                <div class="stat">
+                    <div class="statbox"><small id="votesLabel">Votos potenciales accesibles</small>
+                        <div class="value" id="votes">4/4</div>
+                    </div>
+                    <div class="statbox"><small>Quórum requerido</small>
+                        <div class="value">3/4</div>
+                    </div>
+                </div>
+                <div id="status" class="status" role="status" aria-live="polite">Se puede formar un QC</div>
+                <p class="dim" style="font-size:14px;margin-bottom:0">QC = Quorum Certificate: evidencia de al menos 3
+                    votos válidos en este ejemplo. <strong>Un solo QC no basta para decidir en todas las
+                        variantes.</strong> • Quórum: para n = 3f + 1 nodos, se requieren al menos 2f + 1 votos válidos para un certificado de quórum o QC.</p>
+            </section>
+            <section class="panel">
+                <h2>Proceso por fases</h2>
+                <div class="progress" id="progress"></div>
+                <div class="phase" id="phase">Preparado</div>
+                <div class="detail" id="detail">Pulsa «Siguiente paso» para que el líder haga su propuesta.</div>
+            </section>
+            <section class="panel">
+                <h2>Registro de mensajes</h2>
+                <div class="events" id="events">
+                    <div class="ev">Simulación lista. Elige un escenario y avanza.</div>
+                </div>
+            </section>
+        </div>
+        <section class="panel labpanel" aria-labelledby="labtitle">
+            <div class="attackhead">
+                <h2 id="labtitle">Laboratorio de ataques y tolerancia a fallos</h2><span id="attackTag" class="tag">Sin
+                    ataque</span>
+            </div>
+            <p class="dim" id="labIntro" style="margin:0 0 13px"></p>
+            <div class="labgrid">
+                <div class="labcard">
+                    <h3>Qué hace el atacante / qué falla</h3>
+                    <p id="attackAction"></p>
+                </div>
+                <div class="labcard">
+                    <h3>Cómo responde HotStuff</h3>
+                    <p id="attackDefense"></p>
+                </div>
+            </div>
+            <div id="branches" class="votegrid" hidden>
+                <div class="votecard noqc"><small>Bloque X · votos de A y B</small><strong id="votesX">2/4 · sin
+                        QC</strong></div>
+                <div class="votecard hasqc"><small>Bloque Y · votos de A, C y D</small><strong id="votesY">3/4 ·
+                        prepareQC</strong></div>
+            </div>
+            <div class="assessment"><span id="safety" class="safe">Seguridad: conservada</span><span id="liveness"
+                    class="wait">Progreso: pendiente</span></div>
+        </section>
+    </div>
+    <script>        'use strict';
+        const q = selector => document.querySelector(selector);
+        const names = ['A', 'B', 'C', 'D'];
+        const coords = { A: [305, 80], B: [116, 259], C: [305, 259], D: [494, 259] };
+        const stages = ['Propuesta', 'Prepare', 'Pre-Commit', 'Commit', 'Decide'];
+        const scenarios = {
+            normal: {
+                intro: 'Consenso sin incidencias: cuatro nodos honestos pueden validar el mismo bloque.',
+                action: 'No hay ataque. A propone el bloque X a los otros tres validadores.',
+                defense: 'Cada fase exige 3 votos válidos sobre el mismo bloque para formar su QC.'
+            },
+            one: {
+                intro: 'HotStuff puede tolerar hasta un fallo bizantino entre cuatro validadores, si la red y el liderazgo permiten progresar.',
+                action: 'El nodo D se desconecta y no emite votos.',
+                defense: 'A, B y C todavía reúnen 3/4 votos; sus QC pueden permitir llegar a Decide.'
+            },
+            two: {
+                intro: 'Se supera el presupuesto de fallos f = 1 del ejemplo.',
+                action: 'Los nodos C y D dejan de responder. El líder solo reúne 2/4 votos.',
+                defense: 'No se certifica ninguna fase sin 3 votos. El protocolo se detiene en Prepare: bloquearse no significa decidir mal.'
+            },
+            leader: {
+                intro: 'Un líder que no responde perjudica la vivacidad; se necesita una nueva vista.',
+                action: 'A queda inactivo y no difunde una propuesta.',
+                defense: 'Tras un tiempo de espera, el pacemaker puede iniciar una vista posterior con B como líder, conservando la información segura de consenso.'
+            },
+            equivocation: {
+                intro: 'Un líder bizantino intenta dividir los votos para que se certifiquen dos bloques incompatibles.',
+                action: 'A envía la propuesta X a B, pero una propuesta incompatible Y a C y D; además, A intenta votar ambas ramas.',
+                defense: 'Cada réplica honesta vota, como máximo, una propuesta en la misma fase y vista. Dos QC contradictorios requerirían al menos un voto honesto duplicado; con f = 1 no es posible.'
+            },
+            byzantine: {
+                intro: 'Una firma inválida o un voto manipulado no deben convertirse en votos válidos del certificado.',
+                action: 'D envía a A un mensaje alterado, con firma inválida. D es malicioso; los demás se comportan honestamente.',
+                defense: 'Los votos se comprueban antes de contarlos. A, B y C proporcionan 3 firmas válidas y pueden formar los QC sin D.'
+            },
+            dos: {
+                intro: 'Un ataque a las comunicaciones puede impedir alcanzar el umbral aunque todos los nodos sigan encendidos.',
+                action: 'Un atacante satura o bloquea la entrega de votos de C y D hacia el líder A. Solo llegan los votos de A y B.',
+                defense: 'HotStuff no fabrica certificados con votos ausentes. La seguridad se mantiene, pero el avance se suspende hasta recuperar conectividad.'
+            },
+            partition: {
+                intro: 'Una partición 2 + 2 impide que cualquiera de los grupos alcance el cuórum de 3.',
+                action: 'La red queda partida en dos grupos incomunicados: {A, B} y {C, D}. Cada grupo ve únicamente dos nodos.',
+                defense: 'Ninguna mitad puede certificar un bloque. Cuando vuelva la conectividad, los nodos podrán reunir votos y continuar.'
+            }
+        };
+        let scenario = 'normal', step = 0, view = 1, leader = 'A', recovered = false, log = [], blocked = false;
+
+        function isAttack() { return ['equivocation', 'byzantine', 'dos', 'partition'].includes(scenario); }
+        function stoppedNodes() {
+            if (scenario === 'one') return ['D'];
+            if (scenario === 'two' && !recovered) return ['C', 'D'];
+            if (scenario === 'leader') return ['A'];
+            return [];
+        }
+        function maliciousNodes() {
+            return scenario === 'equivocation' ? ['A'] : scenario === 'byzantine' ? ['D'] : [];
+        }
+        function votesReachable() {
+            if (scenario === 'equivocation') return 3; // Y = {A, C, D}; X = {A, B}.
+            if (scenario === 'byzantine') return 3; // D envía una firma inválida.
+            if ((scenario === 'dos' || scenario === 'partition') && !recovered) return 2;
+            return names.filter(n => !stoppedNodes().includes(n)).length;
+        }
+        function hasQuorum() { return votesReachable() >= 3; }
+        function note(msg, error = false) {
+            log.unshift({ msg, error });
+            if (log.length > 24) log.pop();
+        }
+        function descriptionForStep() {
+            const block = scenario === 'equivocation' ? 'Y' : 'X';
+            const phases = {
+                0: ['Preparado', 'Elige el escenario. Pulsa «Siguiente paso» para iniciar la vista ' + view + '.'],
+                1: ['Propuesta', 'El líder ' + leader + ' difunde la propuesta del bloque ' + block + '. Cada réplica verifica el bloque y las reglas de voto seguro.'],
+                2: ['Prepare', 'Tres votos válidos para el bloque ' + block + ' permiten crear prepareQC. Este certificado NO confirma todavía el bloque.'],
+                3: ['Pre-Commit', 'Se presenta prepareQC y se obtiene un nuevo cuórum: precommitQC. En Basic HotStuff, los validadores actualizan su bloqueo seguro conforme al protocolo.'],
+                4: ['Commit', 'Se presenta precommitQC, se reciben votos Commit y se forma commitQC para ' + block + '.'],
+                5: ['Decide', 'El commitQC se difunde en la fase Decide. En esta ejecución didáctica de Basic HotStuff se decide el bloque ' + block + '.']
+            };
+            if (scenario === 'equivocation') {
+                if (step === 1) return ['Doble propuesta', 'A, líder malicioso, envía X a B e Y a C y D. Son propuestas incompatibles para la misma vista.'];
+                if (step === 2) return ['Prepare · conflicto detectado', 'Votos para X = A + B (2/4, SIN QC). Votos para Y = A + C + D (3/4, prepareQC). A firma las dos ramas, pero no puede obtener dos QC.'];
+                if (step === 3) return ['Pre-Commit · rama Y', 'Solo Y tiene prepareQC. Si el líder distribuye el certificado válido y los validadores siguen el protocolo, se puede conseguir precommitQC(Y). X no obtiene certificado.'];
+                if (step === 4) return ['Commit · rama Y', 'Se reúne commitQC(Y). El líder bizantino podría obstaculizar el progreso reteniendo mensajes, pero no crear un QC incompatible sin romper el límite f = 1.'];
+                if (step === 5) return ['Decide · solo Y', 'Se confirma Y en este recorrido. X nunca tuvo QC. El ataque de doble propuesta NO ha producido dos decisiones incompatibles.'];
+            }
+            if (scenario === 'byzantine' && step === 2) return ['Prepare · voto rechazado', 'D envía un voto manipulado con firma inválida: no se cuenta. A, B y C aportan tres votos válidos para X → prepareQC(X).'];
+            if (blocked) return ['Prepare bloqueado', 'Solo llegan ' + votesReachable() + '/4 votos al líder. Sin 3 votos no hay prepareQC ni se pasa a Pre-Commit. Puedes pulsar «Restablecer comunicaciones».'];
+            return phases[step];
+        }
+        function networkDisconnected(a, b) {
+            if (stoppedNodes().includes(a) || stoppedNodes().includes(b)) return true;
+            if (scenario === 'partition' && !recovered) return (['A', 'B'].includes(a) !== ['A', 'B'].includes(b));
+            // En DoS es posible entregar propuestas A → C/D, pero se pierden
+            // las respuestas C/D → A. El enlace se dibuja como afectado.
+            if (scenario === 'dos' && !recovered) return b === 'A' && ['C', 'D'].includes(a);
+            return false;
+        }
+        function visiblyBroken(a, b) { return networkDisconnected(a, b) || networkDisconnected(b, a); }
+        function svgEl(name, attributes) {
+            const el = document.createElementNS('http://www.w3.org/2000/svg', name);
+            for (const [k, v] of Object.entries(attributes)) el.setAttribute(k, String(v));
+            return el;
+        }
+        function pathBetween(a, b) {
+            const [ax, ay] = coords[a], [bx, by] = coords[b];
+            const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy) || 1;
+            return { x1: ax + dx / len * 54, y1: ay + dy / len * 54, x2: bx - dx / len * 59, y2: by - dy / len * 59 };
+        }
+        function addArrow(source, dest, color = '#5be1d1', noteLabel = '') {
+            if (networkDisconnected(source, dest)) return;
+            const p = pathBetween(source, dest), g = q('#arrowLines');
+            const l = svgEl('line', { ...p, stroke: color, 'class': 'traffic arrow-flow', 'marker-end': color === '#ff7180' ? 'url(#pointRed)' : color === '#f59d53' ? 'url(#pointOrange)' : 'url(#pointCyan)' });
+            g.append(l);
+            if (noteLabel) {
+                const [x1, y1] = coords[source], [x2, y2] = coords[dest];
+                const t = svgEl('text', { x: (x1 + x2) / 2 + 11, y: (y1 + y2) / 2 - 9, fill: color, 'font-size': 13, 'font-weight': 800 });
+                t.textContent = noteLabel; g.append(t);
+            }
+        }
+        function drawNetwork() {
+            const links = q('#networkLinks'), traffic = q('#arrowLines');
+            links.replaceChildren(); traffic.replaceChildren();
+            for (let i = 0; i < names.length; i++) for (let j = i + 1; j < names.length; j++) {
+                const a = names[i], b = names[j];
+                const p = pathBetween(a, b);
+                links.append(svgEl('line', { ...p, 'class': visiblyBroken(a, b) ? 'link-broken' : 'link-live' }));
+            }
+            for (const n of names) {
+                const circle = q('#node' + n + ' circle');
+                const offline = stoppedNodes().includes(n), evil = maliciousNodes().includes(n);
+                const isolated = ((scenario === 'dos' && !recovered && ['C', 'D'].includes(n)) || (scenario === 'partition' && !recovered && ['C', 'D'].includes(n)));
+                const fill = offline ? '#994659' : evil ? '#b53e52' : isolated ? '#7655ae' : n === leader ? '#f59d53' : '#267e7f';
+                const stroke = offline ? '#ff9ca8' : evil ? '#ff8f9f' : isolated ? '#ccaeff' : n === leader ? '#ffdeb6' : '#64e3d1';
+                circle.setAttribute('fill', fill); circle.setAttribute('stroke', stroke);
+                q('#role' + n).textContent = offline ? 'Sin respuesta' : evil ? (n === leader ? 'Líder malicioso' : 'Bizantino') : isolated ? 'Enlace afectado' : n === leader ? 'Líder' : 'Validador';
+            }
+            let caption = '';
+            if (scenario === 'equivocation') caption = 'Bloque X ≠ bloque Y: solo Y alcanza 3/4';
+            else if (scenario === 'partition' && !recovered) caption = 'Partición: grupo {A,B} | grupo {C,D}';
+            else if (scenario === 'dos' && !recovered) caption = 'Tráfico de C y D hacia A bloqueado';
+            else if (scenario === 'byzantine') caption = 'D intenta enviar un voto con firma inválida';
+            q('#networkNote').textContent = caption;
+            if (step === 0 || blocked) return;
+            if (scenario === 'equivocation') {
+                if (step === 1) { addArrow('A', 'B', '#5be1d1', 'X'); addArrow('A', 'C', '#f59d53', 'Y'); addArrow('A', 'D', '#f59d53', 'Y'); }
+                else if (step === 2) { addArrow('B', 'A', '#5be1d1', 'X'); addArrow('C', 'A', '#f59d53', 'Y'); addArrow('D', 'A', '#f59d53', 'Y'); }
+                else for (const n of ['B', 'C', 'D']) addArrow('A', n, '#f59d53');
+                return;
+            }
+            if (scenario === 'byzantine' && step === 2) { addArrow('B', 'A'); addArrow('C', 'A'); addArrow('D', 'A', '#ff7180', '✕'); return; }
+            if (step === 1 || step === 3 || step === 4 || step === 5) {
+                for (const n of names) if (n !== leader && !networkDisconnected(leader, n)) addArrow(leader, n, step === 1 ? '#f59d53' : '#5be1d1');
+            } else if (step === 2) {
+                for (const n of names) if (n !== leader && !networkDisconnected(n, leader)) addArrow(n, leader);
+            }
+        }
+        function showOutcomes() {
+            const safety = q('#safety'), liveness = q('#liveness');
+            safety.className = 'safe'; safety.textContent = 'Seguridad: no hay decisiones incompatibles';
+            liveness.className = 'wait';
+            if (blocked || !hasQuorum() || scenario === 'leader' && leader === 'A') {
+                liveness.className = 'stalled'; liveness.textContent = 'Vivacidad: bloqueada en esta ejecución';
+            } else if (step === 5) { liveness.className = 'safe'; liveness.textContent = 'Vivacidad: bloque decidido'; }
+            else { liveness.textContent = 'Vivacidad: puede progresar'; }
+        }
+        function render() {
+            const reached = votesReachable(), bad = blocked || !hasQuorum() || scenario === 'leader' && leader === 'A';
+            q('#viewname').textContent = 'Vista ' + view + ' · líder ' + leader;
+            q('#votes').textContent = reached + '/4';
+            q('#votesLabel').textContent = scenario === 'equivocation' ? 'Votos potenciales para Y' : scenario === 'byzantine' ? 'Votos válidos posibles' : scenario === 'dos' || scenario === 'partition' ? 'Votos accesibles al líder' : 'Votos disponibles';
+            let statusText = 'Cuórum disponible: se puede avanzar', statusStyle = 'status';
+            if (scenario === 'equivocation') { statusText = 'X: 2 votos (sin QC) · Y: 3 votos (QC posible)'; statusStyle = 'status warn'; }
+            if (scenario === 'byzantine') { statusText = 'Firma de D rechazada; A, B y C pueden formar QC'; }
+            if (bad) { statusText = scenario === 'leader' && leader === 'A' ? 'Líder A no responde: se necesita cambiar de vista' : 'Sin cuórum: no se puede formar un QC'; statusStyle = 'status bad'; }
+            if (step === 5) { statusText = 'DECIDE: bloque ' + (scenario === 'equivocation' ? 'Y' : 'X') + ' confirmado en esta ejecución'; statusStyle = 'status'; }
+            q('#status').textContent = statusText; q('#status').className = statusStyle;
+            const [phase, detail] = descriptionForStep(); q('#phase').textContent = phase; q('#detail').textContent = detail;
+            q('#progress').innerHTML = stages.map((s, i) => `<div class="${step >= i + 1 ? 'on' : ''}">${s}</div>`).join('');
+            const next = q('#next'); next.textContent = scenario === 'leader' && leader === 'A' ? 'Detectar timeout y cambiar de vista →' : step === 5 ? 'Fin de la simulación' : blocked ? 'Consenso bloqueado' : 'Siguiente paso →';
+            next.disabled = step === 5 || blocked;
+            q('#restore').hidden = !(scenario === 'dos' || scenario === 'partition' || scenario === 'two') || recovered;
+            q('#attackTag').textContent = isAttack() ? 'Ataque simulado' : 'Escenario base'; q('#attackTag').className = 'tag' + (isAttack() ? ' alert' : '');
+            const cfg = scenarios[scenario]; q('#labIntro').textContent = cfg.intro; q('#attackAction').textContent = cfg.action;
+            q('#attackDefense').textContent = cfg.defense + (recovered ? ' Comunicación restablecida en esta ejecución.' : '');
+            q('#branches').hidden = scenario !== 'equivocation';
+            q('#votesX').textContent = step >= 2 ? '2/4 · sin QC' : '2/4 · votos posibles';
+            q('#votesY').textContent = step >= 2 ? '3/4 · prepareQC' : '3/4 · votos posibles';
+            showOutcomes(); drawNetwork();
+            const events = q('#events'); events.replaceChildren();
+            for (const e of log) { const div = document.createElement('div'); div.className = 'ev' + (e.error ? ' miss' : ''); div.textContent = e.msg; events.append(div); }
+        }
+        function reset() {
+            scenario = q('#scenario').value; view = 1; leader = 'A'; step = 0; recovered = false; blocked = false; log = [];
+            note('Vista 1 · líder A · ' + q('#scenario').selectedOptions[0].text + '.'); render();
+        }
+        function next() {
+            if (step === 5 || blocked) return;
+            if (scenario === 'leader' && leader === 'A') {
+                view = 2; leader = 'B'; note('TIMEOUT: el líder A no responde. El pacemaker pasa a la vista 2; B pasa a ser líder.'); render(); return;
+            }
+            if (step === 0) {
+                step = 1;
+                if (scenario === 'equivocation') note('ATAQUE: A difunde X a B e Y a C y D; son dos bloques incompatibles para la misma vista.', true);
+                else if (scenario === 'dos') note('DoS/jamming: C y D pueden recibir la propuesta, pero sus votos no llegan a A.', true);
+                else if (scenario === 'partition') note('PARTICIÓN: A y B pueden comunicarse entre sí, pero no con C y D.', true);
+                else if (scenario === 'byzantine') note('Líder A propone X. D prepara un voto con firma inválida.', true);
+                else note('PROPUESTA: líder ' + leader + ' propone el bloque X.');
+                render(); return;
+            }
+            if (step === 1 && !hasQuorum()) {
+                blocked = true;
+                note('PREPARE DETENIDO: solo ' + votesReachable() + ' votos accesibles. Se requieren al menos 3 votos del mismo bloque; no existe prepareQC.', true);
+                render(); return;
+            }
+            step++;
+            if (step === 2) {
+                if (scenario === 'equivocation') note('PREPARE: A firma ambas propuestas. X suma A+B=2; Y suma A+C+D=3 → solo Y obtiene prepareQC.');
+                else if (scenario === 'byzantine') note('PREPARE: se descarta el voto manipulado de D. A+B+C=3 votos válidos para X → prepareQC.');
+                else note('PREPARE: ' + votesReachable() + ' votos válidos para X → prepareQC creado.');
+            }
+            if (step === 3) note('PRE-COMMIT: QC de Prepare comprobado; 3 votos para ' + (scenario === 'equivocation' ? 'Y' : 'X') + ' → precommitQC.');
+            if (step === 4) note('COMMIT: se comprueban las reglas seguras y 3 votos válidos producen commitQC para ' + (scenario === 'equivocation' ? 'Y' : 'X') + '.');
+            if (step === 5) note('DECIDE: bloque ' + (scenario === 'equivocation' ? 'Y' : 'X') + ' decidido; no se han decidido bloques incompatibles.');
+            render();
+        }
+        function restore() {
+            if (recovered || !['two', 'dos', 'partition'].includes(scenario)) return;
+            recovered = true; blocked = false;
+            if (step > 1) step = 1;
+            note('RECUPERACIÓN: comunicaciones/validadores restablecidos. Se puede volver a reunir el cuórum de 3/4.');
+            render();
+        }
+        q('#next').addEventListener('click', next);
+        q('#reset').addEventListener('click', reset);
+        q('#restore').addEventListener('click', restore);
+        q('#scenario').addEventListener('change', reset);
+        reset();
+    </script>
+</body>
+
+</html>

@@ -18,11 +18,15 @@ from pharmachain.api.attacks import SCENARIOS, run_scenario
 from pharmachain.api.visual_lab import router as visual_router
 from pharmachain.consensus.distributed import DistributedHotStuff
 from pharmachain.consensus.safety import audit_committed_safety, demonstrate_conflict_detection
-from pharmachain.domain.state import LedgerState
+from pharmachain.domain.models import TransactionType
+from pharmachain.domain.state import ValidationError
+from pharmachain.domain.transactions import Transaction
+from pharmachain.simulation.pharma_scenario import PharmaScenario
 
 app = FastAPI(title="PharmaChain · Distributed HotStuff Dashboard")
 _lock = RLock()
 _sim: DistributedHotStuff | None = None
+_demo: PharmaScenario | None = None
 _STATIC = Path(__file__).resolve().parent / "static" / "index.html"
 
 
@@ -31,9 +35,10 @@ class NodeAction(BaseModel):
 
 
 def _simulator() -> DistributedHotStuff:
-    global _sim
+    global _sim, _demo
     if _sim is None:
-        _sim = DistributedHotStuff(LedgerState({}), validator_count=4)
+        _demo = PharmaScenario.create()
+        _sim = DistributedHotStuff(_demo.engine.blockchain.committed_state.clone(), validator_count=4)
     return _sim
 
 
@@ -55,6 +60,9 @@ def _snapshot(sim: DistributedHotStuff) -> dict:
                 "blocks": len(node.blockchain.blocks),
                 "certificates": len(node.certificates),
                 "recovering": runtime.recovering,
+                "public_key": (
+                    runtime.node.validator.public_key.hex() if isinstance(runtime.node.validator.public_key, bytes) else str(runtime.node.validator.public_key)
+                ),
             }
         )
     return {
@@ -63,12 +71,32 @@ def _snapshot(sim: DistributedHotStuff) -> dict:
         "quorum": sim.quorum,
         "nodes": nodes,
         "events": sim.events[-150:],
+        "event_count": len(sim.events),
+        "simulation_mode": "distributed-pharmaceutical-transactions",
+        "pharmaceutical_transactions_enabled": True,
+        "pending_transactions": [
+            {"tx_id": tx.tx_id, "batch_id": tx.batch_id, "type": tx.tx_type.value, "sender": tx.sender_id, "receiver": tx.receiver_id}
+            for tx in sim.pending_transactions
+        ],
+        "custody_by_node": {
+            node_id: {batch_id: batch.custodian_id for batch_id, batch in runtime.node.blockchain.committed_state.batches.items()}
+            for node_id, runtime in sim.nodes.items()
+        },
     }
 
 
 @app.get("/")
 def home():
     return FileResponse(_STATIC)
+
+
+@app.get("/api/education/attack-walkthrough")
+def guided_attack_walkthrough():
+    """Standalone introductory Basic HotStuff demo; never mutates the ledger."""
+    path = _STATIC.parent / "demo_hotstuff_ataques.html"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Introducción no instalada")
+    return FileResponse(path, media_type="text/html")
 
 
 @app.get("/api/simulation")
@@ -79,10 +107,70 @@ def status():
 
 @app.post("/api/simulation/reset")
 def reset():
-    global _sim
+    global _sim, _demo
     with _lock:
-        _sim = DistributedHotStuff(LedgerState({}), validator_count=4)
-        return _snapshot(_sim)
+        _sim = None
+        _demo = None
+        return _snapshot(_simulator())
+
+
+class BatchRegistration(BaseModel):
+    batch_id: str
+    medicine_name: str
+    quantity: int
+
+
+class BatchTransfer(BaseModel):
+    batch_id: str
+    sender_id: str
+    receiver_id: str
+
+
+def _queue_transaction(tx: Transaction) -> dict:
+    sim = _simulator()
+    try:
+        sim.submit_transaction(tx)
+    except (ValueError, ValidationError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return _snapshot(sim)
+
+
+@app.post("/api/simulation/batches/register")
+def register_distributed_batch(request: BatchRegistration):
+    with _lock:
+        sim = _simulator()
+        assert _demo is not None
+        state = next(iter(sim.nodes.values())).node.blockchain.committed_state
+        tx = Transaction(
+            tx_type=TransactionType.REGISTER_BATCH,
+            sender_id="laboratory",
+            batch_id=request.batch_id,
+            receiver_id=None,
+            medicine_name=request.medicine_name,
+            quantity=request.quantity,
+            nonce=state.nonces.get("laboratory", 0) + 1,
+        ).signed(_demo.private_keys["laboratory"])
+        return _queue_transaction(tx)
+
+
+@app.post("/api/simulation/batches/transfer")
+def transfer_distributed_batch(request: BatchTransfer):
+    with _lock:
+        sim = _simulator()
+        assert _demo is not None
+        if request.sender_id not in _demo.private_keys:
+            raise HTTPException(status_code=422, detail="Unknown demo sender")
+        state = next(iter(sim.nodes.values())).node.blockchain.committed_state
+        tx = Transaction(
+            tx_type=TransactionType.TRANSFER_BATCH,
+            sender_id=request.sender_id,
+            batch_id=request.batch_id,
+            receiver_id=request.receiver_id,
+            medicine_name=None,
+            quantity=None,
+            nonce=state.nonces.get(request.sender_id, 0) + 1,
+        ).signed(_demo.private_keys[request.sender_id])
+        return _queue_transaction(tx)
 
 
 @app.post("/api/simulation/round")
@@ -119,6 +207,8 @@ def reconnect(action: NodeAction):
         _validate_node(sim, action.node_id)
         sim.network.reconnect(action.node_id)
         sim._record("NODE_RECONNECTED", node=action.node_id)
+        completed = sim.reconnect_and_sync(action.node_id)
+        sim._record("NODE_RECONNECT_SYNC", node=action.node_id, completed=completed)
         return _snapshot(sim)
 
 
