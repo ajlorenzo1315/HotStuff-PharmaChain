@@ -18,6 +18,12 @@ from pharmachain.consensus.messages import (
 )
 from pharmachain.consensus.new_view import NewView, NewViewCollector
 from pharmachain.consensus.node import HotStuffNode
+from pharmachain.consensus.sync import (
+    BlockRequest,
+    BlockResponse,
+    ancestry,
+    validate_response,
+)
 from pharmachain.consensus.validator import Validator
 from pharmachain.consensus.view_change import SignedTimeout, TimeoutCertificate
 from pharmachain.domain.state import LedgerState
@@ -58,6 +64,7 @@ class NodeRuntime:
     timeouts: dict[int, dict[str, SignedTimeout]] = field(default_factory=dict)
     formed_tcs: set[int] = field(default_factory=set)
     new_views: dict[int, NewViewCollector] = field(default_factory=dict)
+    pending_sync: dict[str, str] = field(default_factory=dict)
 
 
 class DistributedHotStuff:
@@ -71,8 +78,7 @@ class DistributedHotStuff:
         if validator_count < 4:
             raise ValueError("At least four validators required")
 
-        # El valor 2f+1 sigue siendo correcto cuando n=3f+1,
-        # como sucede con tus cuatro validadores.
+        # El valor 2f+1 sigue siendo correcto cuando n=3f+1
         self.f = (validator_count - 1) // 3
         self.quorum = validator_count - self.f
 
@@ -137,6 +143,10 @@ class DistributedHotStuff:
             self._on_tc(recipient, msg)
         elif msg.kind == "NEW_VIEW":
             self._on_new_view(recipient, msg)
+        elif msg.kind == "BLOCK_REQUEST":
+            self._on_block_request(recipient, msg)
+        elif msg.kind == "BLOCK_RESPONSE":
+            self._on_block_response(recipient, msg)
 
     def _on_proposal(
         self,
@@ -493,6 +503,70 @@ class DistributedHotStuff:
                 high_qc_hash=selected.block_hash if selected else self.genesis_hash,
             )
 
+    def request_sync(self, recipient: str, source: str, target_hash: str) -> None:
+        """Ask a peer for a bounded ancestry path; never accept a commit from it."""
+        if (
+            recipient == source
+            or recipient not in self.nodes
+            or source not in self.nodes
+        ):
+            return
+        runtime = self.nodes[recipient]
+        if target_hash in runtime.node.blockchain.blocks:
+            return
+        runtime.pending_sync[target_hash] = source
+        self._record("BLOCK_REQUESTED", node=recipient, peer=source, block=target_hash)
+        self.network.send(recipient, source, "BLOCK_REQUEST", BlockRequest(target_hash))
+
+    def _on_block_request(self, recipient: str, msg: Envelope) -> None:
+        request = msg.payload
+        if not isinstance(request, BlockRequest) or msg.sender not in self.nodes:
+            return
+        if not 1 <= request.max_blocks <= 64:
+            return
+        try:
+            path = ancestry(
+                self.nodes[recipient].node.blockchain.blocks,
+                request.target_hash,
+                request.max_blocks,
+            )
+        except ValueError:
+            self._record("BLOCK_UNAVAILABLE", node=recipient, block=request.target_hash)
+            return
+        self.network.send(
+            recipient,
+            msg.sender,
+            "BLOCK_RESPONSE",
+            BlockResponse(request.target_hash, path),
+        )
+
+    def _on_block_response(self, recipient: str, msg: Envelope) -> None:
+        response = msg.payload
+        if not isinstance(response, BlockResponse):
+            return
+        runtime = self.nodes[recipient]
+        expected_source = runtime.pending_sync.get(response.target_hash)
+        if expected_source != msg.sender:
+            self._record("SYNC_REJECTED", node=recipient, reason="unsolicited_response")
+            return
+        if not validate_response(response, response.target_hash, self.genesis_hash):
+            self._record("SYNC_REJECTED", node=recipient, reason="invalid_ancestry")
+            return
+        node = runtime.node
+        for block in response.blocks:
+            if block.block_hash in node.blockchain.blocks:
+                continue
+            if block.proposer_id != self.leader_id(block.view):
+                self._record("SYNC_REJECTED", node=recipient, reason="invalid_proposer")
+                return
+            # receive_block applies the existing chain/state validation.
+            if not node.receive_block(block):
+                self._record("SYNC_REJECTED", node=recipient, reason="invalid_block")
+                return
+        del runtime.pending_sync[response.target_hash]
+        self._record("SYNC_COMPLETED", node=recipient, block=response.target_hash)
+        # Sync only supplies data: QC validation and commit rules remain separate.
+
     def trigger_timeouts(self, view: int) -> None:
         """Educational timeout trigger; network transports signed notices."""
         next_leader = self.leader_id(view + 1)
@@ -539,6 +613,17 @@ class DistributedHotStuff:
                             view=current_view,
                             block=selected.block_hash,
                         )
+                        sources = [
+                            m.validator_id
+                            for m in collector.messages.values()
+                            if m.high_qc is not None
+                            and m.high_qc.block_hash == selected.block_hash
+                        ]
+                        if sources:
+                            self.request_sync(
+                                leader_id, sources[0], selected.block_hash
+                            )
+                            self.network.run()
                         return RoundResult(
                             current_view,
                             leader_id,
