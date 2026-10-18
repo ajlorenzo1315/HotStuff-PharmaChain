@@ -13,6 +13,9 @@ from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
 from pharmachain.api.attacks import SCENARIOS, run_scenario
+
+# Isolated educational trace endpoints (phase 24).
+from pharmachain.api.visual_lab import router as visual_router
 from pharmachain.consensus.distributed import DistributedHotStuff
 from pharmachain.consensus.safety import audit_committed_safety, demonstrate_conflict_detection
 from pharmachain.domain.state import LedgerState
@@ -255,3 +258,24 @@ def byzantine_compare_csv(
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": 'attachment; filename="hotstuff_byzantine.csv"'},
     )
+
+
+@app.get("/api/education/consensus")
+def consensus_guide():
+    """Read-only teaching metadata. Does not alter simulation state."""
+    return {
+        "protocol": "Chained HotStuff",
+        "validators": 4,
+        "fault_tolerance": 1,
+        "quorum": 3,
+        "phases": [
+            {"id": "PROPOSE", "description": "Leader broadcasts a justified proposal"},
+            {"id": "VOTE", "description": "Validators verify and vote for a safe proposal"},
+            {"id": "QC", "description": "Quorum certificate aggregates 3 valid votes"},
+            {"id": "COMMIT", "description": "A suitable three-chain commits an ancestor"},
+        ],
+        "caveat": "Educational simulation; no formal verification or real network latency measurement",
+    }
+
+
+app.include_router(visual_router)

@@ -1,0 +1,184 @@
+/* Phase 24 — isolated trace player */
+#visualLab{--v-accent:#4fe2c3;scroll-margin-top:85px}
+#visualLab .vl-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(270px,.65fr);gap:14px}
+#visualLab .vl-box{background:#0b1a2b;border:1px solid #31445d;border-radius:14px;padding:16px;min-width:0}
+#visualLab .vl-controls{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:14px 0}
+#visualLab button,#visualLab select,#visualLab input{background:#1d3550;color:#f4f8ff;border:1px solid #476282;border-radius:9px;padding:9px 12px}
+#visualLab button{cursor:pointer}#visualLab button:disabled{opacity:.45;cursor:not-allowed}
+#visualLab button:focus-visible,#visualLab select:focus-visible,#visualLab input:focus-visible{outline:2px solid #ffc978;outline-offset:2px}
+#visualLab .vl-control-label{font-size:13px;color:#c1d4e8}
+#visualLab #vlNetwork{width:100%;height:auto;max-height:350px;display:block}
+#visualLab .vl-steps{display:flex;flex-wrap:wrap;gap:5px;max-height:170px;overflow:auto;margin-top:12px}
+#visualLab .vl-step{min-width:34px;padding:6px 8px;font-size:12px}
+#visualLab .vl-step.active{background:#147d85;border-color:#5ce7ca;color:#fff}
+#visualLab .vl-step.reject{border-color:#ff8195}#visualLab .vl-step.qc{border-color:#4fe2c3}
+#visualLab .vl-statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+#visualLab .vl-stat{border:1px solid #38506b;background:#11263b;border-radius:10px;padding:12px}
+#visualLab .vl-stat strong{display:block;font-size:20px;color:#e9fcff}
+#visualLab .vl-stat small{color:#a9c3d8;font-size:11px}
+#visualLab .vl-key{font-weight:700;color:#8debd5}#visualLab .vl-warning{color:#ffc978}
+#visualLab .vl-info{line-height:1.55;font-size:14px;overflow-wrap:anywhere}
+#visualLab .vl-progress{width:100%;accent-color:#4fe2c3}
+#visualLab .vl-code{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:210px;overflow:auto;background:#071321;border:1px solid #30455d;border-radius:8px;padding:10px}
+#visualLab .vl-conclusion{border-left:3px solid #4fe2c3;padding:12px;background:#102f38;border-radius:8px}
+#visualLab .vl-legend{font-size:12px;color:#afc8df}
+#visualLab .vl-row{display:flex;justify-content:space-between;gap:12px;align-items:center}
+#visualLab .vl-scenario{margin-bottom:12px;padding:10px;border:1px solid #39516c;border-radius:9px}
+@media(max-width:850px){#visualLab .vl-grid{grid-template-columns:1fr}}
+@media(max-width:480px){#visualLab .vl-statgrid{grid-template-columns:1fr 1fr}}
+@media(prefers-reduced-motion:reduce){#visualLab *{animation:none!important;transition:none!important}}
+/* Phase 25: evidence-backed measurements and conceptual GIFs */
+#visualLab .vl-extra{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:14px;margin-top:14px}
+#visualLab #vlGif{display:block;width:100%;max-width:650px;aspect-ratio: 16/9;object-fit:contain;background:#081626;border-radius:12px;border:1px solid #3b5872}
+#visualLab .vl-analytics{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px}
+#visualLab .vl-measure{display:flex;flex-direction:column;gap:5px;background:#10263a;border:1px solid #38506b;border-radius:10px;padding:10px}
+#visualLab .vl-measure strong{font-size:21px;color:#85e6d4;font-variant-numeric:tabular-nums}
+#visualLab .vl-measure span{font-size:11px;color:#b2c8d9}
+#visualLab .vl-barrow{display:grid;grid-template-columns:100px minmax(0,1fr) 35px;align-items:center;gap:9px;margin:7px 0;font-size:12px}
+#visualLab .vl-bartrack{height:13px;border-radius:7px;background:#1c3650;overflow:hidden}
+#visualLab .vl-barfill{height:100%;background:linear-gradient(90deg,#1a9d99,#79e8cd);border-radius:7px}
+@media(max-width:850px){#visualLab .vl-extra{grid-template-columns:1fr}}
+
+/* Phase 26: formal educational narrative and step-by-step interpretation */
+#visualLab .vl26{margin:18px 0;padding:18px;border:1px solid #355e71;border-radius:16px;background:linear-gradient(140deg,#10283a,#0a1928)}
+#visualLab .vl26-eyebrow{font-size:11px;letter-spacing:.13em;font-weight:800;color:#70e3cf}
+#visualLab .vl26-header h3{font-size:22px;margin:7px 0}
+#visualLab .vl26-header p{line-height:1.6;color:#c3d6e7}
+#visualLab .vl26-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+#visualLab .vl26-panel{border:1px solid #36536c;border-radius:12px;background:#102236;padding:16px}
+#visualLab .vl26-panel h4{color:#8ae7d3;margin:0 0 9px;font-size:14px}
+#visualLab .vl26-panel p{color:#d3e3ef;line-height:1.55;margin:0 0 16px}
+#visualLab .vl26-panel ol{padding-left:23px;line-height:1.65;margin:0}
+#visualLab .vl26-panel li{padding:4px 0 4px 5px;border-bottom:1px solid #274258}
+#visualLab .vl26-panel li::marker{color:#7de7d0;font-weight:700}
+#visualLab .vl26-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px;margin:12px 0}
+#visualLab .vl26-measure{background:#0a1c2d;border:1px solid #38546a;padding:12px;border-radius:10px;display:flex;flex-direction:column;gap:6px}
+#visualLab .vl26-measure strong{font-size:24px;color:#87ebd5}
+#visualLab .vl26-measure small{color:#e6f2ff}
+#visualLab .vl26-measure span{font-size:11px;color:#adc4d5;line-height:1.45}
+#visualLab .vl26-disclaimer{font-size:12px!important;color:#ffcf83!important}
+@media(max-width:780px){#visualLab .vl26-cols{grid-template-columns:1fr}}
+
+/* Panel de consenso integrado en la reproducción */
+#visualLab .vl-playback-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(220px,.65fr);gap:12px;align-items:start}
+#visualLab .vl-side{background:#102439;border:1px solid #3a5671;border-radius:12px;padding:14px;min-width:0}
+#visualLab .vl-side h4{font-size:13px;color:#90e6d6;margin:2px 0 12px}
+#visualLab .vl-quorum-state{font-weight:700;font-size:17px;line-height:1.35}
+#visualLab .vl-quorum-state[data-status="blocked"]{color:#ff9c9c}
+#visualLab .vl-quorum-state[data-status="possible"]{color:#8cebd2}
+#visualLab .vl-quorum-meter{height:15px;background:#23384e;border-radius:8px;position:relative;margin:14px 0;overflow:visible}
+#visualLab #vlLiveQuorumBar{height:100%;border-radius:8px;background:linear-gradient(90deg,#167f82,#66dfb7);transition:width .25s}
+#visualLab .vl-threshold{position:absolute;left:75%;top:-7px;border-left:2px solid #ffc978;padding:0 0 0 5px;color:#ffc978;font-size:10px;height:30px}
+#visualLab .vl-voter-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+#visualLab .vl-voter{font-size:11px;padding:8px 5px;border-radius:7px;border:1px solid #46617a;text-align:center}
+#visualLab .vl-voter.eligible{background:#17463f;color:#b1f2dc}
+#visualLab .vl-voter.excluded{background:#512c38;color:#ffd4dc}
+#visualLab .vl-check{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #30465b;padding:7px 0;font-size:11px}
+#visualLab .vl-check strong{color:#e8f9ff;text-align:right}
+#visualLab .vl-side .vl-info{font-size:12px;line-height:1.5}
+#visualLab .vl-fine{font-size:11px;color:#a8bbcd}
+@media(max-width:1050px){#visualLab .vl-playback-layout{grid-template-columns:1fr}}
+
+/* Activity grid — balanced, legible on desktop and mobile. */
+#visualLab .vl-node-activity{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0}
+#visualLab .vl-node-card{min-width:0;padding:13px;border:1px solid #3c5670;border-radius:11px;background:#10263b;display:flex;flex-direction:column;gap:7px}
+#visualLab .vl-node-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+#visualLab .vl-node-heading strong{font-size:17px;color:#eefaff}
+#visualLab .vl-node-role{font-size:11px;color:#a7d6e2;border:1px solid #365b69;border-radius:7px;padding:3px 6px}
+#visualLab .vl-node-card p{font-size:12px;line-height:1.5;margin:0;color:#d8e6f3;overflow-wrap:anywhere}
+#visualLab .vl-node-card small{font-size:11px;color:#b6c9da}
+#visualLab .vl-node-current{border-color:#6fe6c9;background:#133b42}
+#visualLab .vl-node-adversary{border-left:4px solid #fb8499}
+#visualLab .vl-playback-layout{grid-template-columns:minmax(0,1.5fr) minmax(320px,.9fr)!important;gap:18px!important;align-items:start}
+#visualLab .vl-playback-layout>svg{aspect-ratio:570/320;max-height:none!important;object-fit:contain}
+#visualLab .vl-side{display:grid;grid-template-columns:minmax(0,1fr);align-content:start;gap:7px;overflow-wrap:anywhere}
+#visualLab .vl-side h4{margin:9px 0 2px!important}
+#visualLab .vl-box{overflow:visible!important}
+@media(max-width:1050px){#visualLab .vl-playback-layout{grid-template-columns:1fr!important}}
+@media(max-width:540px){#visualLab .vl-node-activity{grid-template-columns:1fr}}
+
+
+/* HotStuff: simulator is one self-contained, visible, responsive workspace. */
+#visualLab .vl-simulator {min-width:0; overflow:visible;}
+#visualLab .vl-simulator-heading {display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+#visualLab .vl-simulator-heading h3 {margin:0;font-size:1.12rem;line-height:1.4;}
+#visualLab .vl-simulator-subtitle {font-size:.87rem;color:#b7cde0;}
+#visualLab .vl-simulator .vl-playback-layout {display:grid!important;grid-template-columns:minmax(0,1.42fr) minmax(270px,.88fr)!important;align-items:start!important;gap:12px!important;min-width:0;}
+#visualLab .vl-simulator #vlNetwork {display:block!important;visibility:visible!important;opacity:1!important;width:100%!important;height:auto!important;min-height:235px;max-height:none!important;aspect-ratio:570 / 320;min-width:0;align-self:start;overflow:visible;border:1px solid #3a5972;border-radius:12px;background:#081626;}
+#visualLab .vl-simulator .vl-side {min-width:0;overflow-wrap:anywhere;display:grid;grid-template-columns:1fr;align-content:start;gap:6px;}
+#visualLab .vl-simulator .vl-side h4 {margin:8px 0 0;font-size:.91rem;}
+#visualLab .vl-simulator .vl-info {font-size:.84rem;line-height:1.42;margin:4px 0;}
+#visualLab .vl-simulator .vl-node-activity {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0;}
+#visualLab .vl-simulator .vl-controls {gap:6px;margin:12px 0;}
+#visualLab .vl-simulator .vl-controls button {padding:7px 10px;font-size:.86rem;}
+#visualLab .vl-simulator .vl-controls select {padding:7px 9px;}
+@media(max-width:900px){#visualLab .vl-simulator .vl-playback-layout{grid-template-columns:minmax(0,1fr)!important;}#visualLab .vl-simulator #vlNetwork{min-height:180px;}}
+@media(max-width:540px){#visualLab .vl-simulator .vl-node-activity{grid-template-columns:1fr 1fr;}#visualLab .vl-simulator #vlNetwork{min-height:130px;}}
+
+/* Actividad integrada en cada nodo del propio SVG; sin tarjetas externas. */
+#visualLab .vl-simulator #vlNetwork {aspect-ratio:680/410!important;min-height:260px;max-height:none!important;}
+#visualLab .vl-simulator .vl-playback-layout {grid-template-columns:minmax(0,1.65fr) minmax(260px,.8fr)!important;}
+@media(max-width:900px){#visualLab .vl-simulator .vl-playback-layout{grid-template-columns:minmax(0,1fr)!important;}#visualLab .vl-simulator #vlNetwork{min-height:210px;}}
+
+/* Entrega unificada: un solo laboratorio y gráficas visibles. */
+#visualLab .vl-grid{grid-template-columns:minmax(0,1fr)!important}
+#visualLab .vl-playback-layout{grid-template-columns:minmax(0,1.6fr) minmax(260px,.85fr)!important}
+#visualLab #vlNetwork{width:100%!important;min-height:260px!important;height:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
+#visualLab .vl-simulator{overflow:visible}
+#visualLab #byzantineLab[hidden]{display:none!important}
+#visualLab #byzantineLab{margin-top:16px}
+#visualLab #byzChart{display:grid;gap:10px}
+#visualLab .byz-line{display:grid;grid-template-columns:minmax(110px,170px) minmax(90px,1fr) minmax(110px,160px);align-items:center;gap:12px}
+#visualLab .byz-line strong{text-align:right;font-variant-numeric:tabular-nums}
+#visualLab #byzTable{overflow-x:auto}
+#visualLab #byzTable table{width:100%;min-width:580px}
+#visualLab #byzTable td,#visualLab #byzTable th{padding:9px 10px;border-bottom:1px solid #31485f}
+#visualLab #byzRoundsDetail pre{overflow:auto;max-height:260px}
+#visualLab .vl-detail{margin-top:14px}
+#topologySvg{display:block!important;width:100%!important;height:auto!important;min-height:300px!important;visibility:visible!important}
+.topology-graphic{min-height:300px;overflow:hidden}
+@media(max-width:950px){#visualLab .vl-playback-layout{grid-template-columns:1fr!important}}
+@media(max-width:620px){#visualLab .byz-line{grid-template-columns:1fr 1fr}#visualLab .byz-track{grid-column:1/-1;grid-row:2}#visualLab .byz-line strong{text-align:right}}
+
+/* Layout compacto: grafo y panel de análisis de igual altura */
+#visualLab .vl-simulator .vl-playback-layout{display:grid!important;grid-template-columns:minmax(0,1.75fr) minmax(250px,.7fr)!important;align-items:stretch!important;gap:12px!important}
+#visualLab .vl-simulator #vlNetwork{width:100%!important;height:100%!important;min-height:460px!important;max-height:none!important;aspect-ratio:auto!important;object-fit:contain!important}
+#visualLab .vl-simulator .vl-side{height:100%;min-height:460px;padding:10px!important;gap:3px!important;align-content:start!important}
+#visualLab .vl-simulator .vl-side h4{font-size:12px!important;margin:4px 0 1px!important}
+#visualLab .vl-simulator .vl-side .vl-info{font-size:11px!important;line-height:1.3!important;margin:2px 0!important}
+#visualLab .vl-simulator .vl-voter{font-size:10px;padding:5px 3px}
+#visualLab .vl-simulator .vl-check{font-size:10px;padding:4px 0}
+#visualLab .vl-simulator .vl-quorum-state{font-size:14px}
+#visualLab .vl-simulator .vl-quorum-meter{margin:7px 0}
+#visualLab .vl-simulator .vl-side input{padding:5px!important}
+#topologySvg{width:100%!important;height:auto!important;min-height:400px!important;display:block!important}
+.topology-graphic{min-height:400px!important}
+.network-activity{font-size:12px;color:#bcd5e7;padding:7px 12px;border-top:1px solid #30485f}
+.node-inspector{background:#10263a;border:1px solid #38506b;border-radius:10px;padding:12px;margin-top:8px}
+.node-inspector .toolbar{gap:6px;margin:10px 0 0}
+.node-inspector button{padding:7px 9px;font-size:12px}
+@media(max-width:1050px){#visualLab .vl-simulator .vl-playback-layout{grid-template-columns:1fr!important}#visualLab .vl-simulator #vlNetwork{min-height:340px!important;height:auto!important;aspect-ratio:680/410!important}#visualLab .vl-simulator .vl-side{min-height:0!important}}
+
+/* Live network: fixed dimensions and responsive layout */
+#topologySvg{display:block!important;width:100%!important;height:auto!important;min-height:350px!important;visibility:visible!important;opacity:1!important;background:#081626}
+.topology-grid{grid-template-columns:minmax(0,1.65fr) minmax(280px,.8fr)!important;align-items:stretch}
+.topology-side{min-width:0}.live-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:12px 0}.live-toolbar button{padding:8px 10px}.live-toolbar input{flex:1;min-width:110px}#liveError{color:#ffb0b0;font-size:12px}
+@media(max-width:950px){.topology-grid{grid-template-columns:1fr!important}#topologySvg{min-height:240px!important}}
+.attack-outcome-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:8px}.attack-outcome-row{border:1px solid #36506b;border-radius:9px;background:#10243a;padding:10px;display:flex;align-items:center;justify-content:space-between;gap:10px}.attack-outcome-row strong{font-size:13px}.attack-outcome-row span{font-size:11px;white-space:nowrap}.outcome-ok{color:#75e2bf}.outcome-fail{color:#ff9caa}.outcome-unknown{color:#b8c9d8}
+/* Grafo principal autónomo: las reglas anteriores de #topologySvg no lo afectan. */
+#liveGraphV2{display:block!important;width:100%!important;height:auto!important;min-height:440px;max-height:none!important;aspect-ratio:720/505;visibility:visible!important;opacity:1!important;background:#09192b;border:1px solid #3b5a75;border-radius:14px}
+#networkPanel .topology-grid{display:grid!important;grid-template-columns:minmax(0,1.65fr) minmax(280px,.8fr)!important;gap:14px;align-items:stretch}
+#networkPanel .topology-graphic,#networkPanel .topology-side{min-width:0;align-self:stretch}
+#networkPanel .topology-side{font-size:.89rem}
+#networkPanel .node-inspector{font-size:.87rem}
+#visualLab .vl-simulator .vl-playback-layout{grid-template-columns:minmax(0,1.85fr) minmax(235px,.68fr)!important;align-items:stretch!important}
+#visualLab .vl-simulator #vlNetwork{min-height:390px!important;height:100%!important;max-height:none!important}
+#visualLab .vl-simulator .vl-side{font-size:.82rem;padding:10px!important;gap:3px!important}
+#visualLab .vl-simulator .vl-side h4{font-size:.8rem!important;margin:5px 0 2px!important}
+#visualLab .vl-simulator .vl-side .vl-info{font-size:.77rem!important;line-height:1.3!important}
+#visualLab .vl-simulator .vl-check{padding:4px 0!important}
+#byzQcInspector{margin-top:12px;padding:12px;border:1px solid #3d6076;border-radius:10px;background:#10263a}
+#byzQcInspector .qc-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}
+#byzQcInspector .qc-cell{background:#142f43;padding:9px;border-radius:8px;font-size:.8rem}
+#byzQcInspector .qc-cell strong{display:block;font-size:1.2rem}
+@media(max-width:900px){#networkPanel .topology-grid,#visualLab .vl-simulator .vl-playback-layout{grid-template-columns:1fr!important}#liveGraphV2{min-height:280px}#visualLab .vl-simulator #vlNetwork{min-height:260px!important}}

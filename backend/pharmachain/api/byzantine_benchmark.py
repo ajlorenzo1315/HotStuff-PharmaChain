@@ -1,10 +1,7 @@
-"""Byzantine vote fault experiments
-for the educational HotStuff simulator.
+"""Byzantine vote fault experiments for the educational HotStuff simulator.
 
-Compatible with phase 21
-(run_scenario/run_comparison/export_results) and
-phase 22 (run_experiment/compare/to_csv).
-Models faulty votes, not full BFT.
+Compatible with phase 21 (run_scenario/run_comparison/export_results) and
+phase 22 (run_experiment/compare/to_csv). Models faulty votes, not full BFT.
 """
 
 from __future__ import annotations
@@ -112,10 +109,7 @@ def run_experiment(*, rounds: int = 12, seed: int = 42, faulty_count: int = 1, m
         "safety": audit,
         "simulated_time": round(sim.network.time, 6),
         "round_details": details,
-        "limitations": (
-            "Controlled faulty votes only; proposer and transport logic are unchanged. "
-            "This experiment is not a formal safety or liveness proof."
-        ),
+        "limitations": ("Controlled faulty votes only; proposer and transport logic are unchanged. This experiment is not a formal safety or liveness proof."),
     }
 
 
@@ -185,10 +179,7 @@ def main() -> None:
     (args.out / "comparison.json").write_text(json.dumps(comparison, indent=2), encoding="utf-8")
     (args.out / "comparison.csv").write_text(to_csv(comparison), encoding="utf-8")
     for row in comparison["scenarios"]:
-        print(
-            f"f={row['faulty_count']} QC={row['qc_rounds']}/{row['rounds']} "
-            f"committed={row['max_committed_height']} safe={row['safety_ok']}"
-        )
+        print(f"f={row['faulty_count']} QC={row['qc_rounds']}/{row['rounds']} committed={row['max_committed_height']} safe={row['safety_ok']}")
     print(f"Saved to {args.out}")
 
 
