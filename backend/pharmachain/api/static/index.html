@@ -11,6 +11,17 @@
 .voteBox{padding:12px;border:1px solid #3b526e;border-radius:10px;background:#19263b}
 .voteBox strong{display:block;margin-bottom:5px}
 #forkSummary{margin-top:10px;font-size:14px;line-height:1.5}
+#byzantineLab select,#byzantineLab input{background:#243b5d;color:#fff;border:1px solid #426188;border-radius:8px;padding:9px;max-width:130px}
+#byzantineLab label{align-self:center;font-size:13px}
+.byz-track{height:13px;background:#2b3d58;border-radius:8px;overflow:hidden;flex:1}
+.byz-fill{height:100%;background:#60d8ad}
+.byz-line{display:flex;gap:12px;align-items:center;margin:12px 0}
+.byz-line span{min-width:150px;font-size:13px}
+#byzTable{overflow-x:auto}
+#byzTable table{border-collapse:collapse;width:100%;font-size:13px}
+#byzTable th,#byzTable td{padding:10px;border-bottom:1px solid #344760;text-align:left}
+#byzRoundsDetail details{margin:12px 0}
+#byzRoundsDetail pre{max-height:230px;overflow:auto;font-size:12px}
 </style>
 </head>
 <body>
@@ -22,7 +33,29 @@
 <div id="nodes" class="layout"></div>
 <section class="panel"><h2>Laboratorio de ataques bizantinos</h2><p class="muted">Cada escenario se ejecuta en una red aislada. El resultado es una comprobación automática, no una garantía formal de seguridad.</p><div class="toolbar"><select id="scenario" aria-label="Escenario de ataque" style="background:#243b5d;color:#fff;border:1px solid #426188;border-radius:9px;padding:10px"></select><button class="primary" id="attack">Ejecutar escenario</button></div><div id="attackResult" role="status" class="muted">Selecciona un escenario para ver la evidencia.</div><div id="attackEvents" style="max-height:260px;overflow:auto;font-family:monospace;font-size:12px"></div></section>
 <section class="panel"><h2>Auditoría de safety: commits incompatibles</h2><p class="muted">Compara los prefijos confirmados de todos los validadores. El experimento de conflicto artificial prueba el detector, no una vulnerabilidad de HotStuff.</p><div class="toolbar"><button id="safetyCheck">Auditar red actual</button><button id="safetyConflict">Inyectar conflicto de prueba</button><button class="primary" id="safetyFork">Simular líder equivocado (dos ramas)</button></div><pre id="safetyResult" style="white-space:pre-wrap;overflow-wrap:anywhere" role="status">Sin ejecutar</pre><div id="forkGraph" hidden><h3>Árbol de bloques del experimento</h3><svg id="forkTree" viewBox="0 0 720 330" role="img" aria-label="Árbol de bloques y bifurcaciones"></svg><div id="forkVotes"></div><div id="forkSummary" role="status"></div></div></section>
+<section class="panel"><h2>Informe multiejecución (fase 20)</h2>
+<p class="muted">Diez semillas independientes por escenario; fallos de desconexión, no ataques bizantinos. Los valores son simulados.</p>
+<div class="toolbar"><button id="reportRun" class="primary">Ejecutar 10 semillas</button><a href="/api/benchmark/report.csv?runs=10&amp;rounds=12&amp;start_seed=42" download="hotstuff_runs.csv">Exportar CSV</a></div>
+<div id="reportOutput" role="status">Sin ejecutar</div></section>
 <section class="panel"><h2>Comparativa de tolerancia a fallos</h2><p class="muted">Tres simulaciones aisladas: 0, 1 o 2 validadores desconectados. Los tiempos son simulados; no representan rendimiento real.</p><div class="toolbar"><button class="primary" id="benchmarkRun">Comparar 12 rondas</button></div><div id="benchmarkOutput" role="status">Sin ejecutar</div></section>
+
+<section class="panel" id="byzantineLab">
+<h2>Experimentos de votos bizantinos · Fase 22</h2>
+<p class="muted">Cuatro validadores; cuórum 3. Se alteran votos reales del simulador en escenarios aislados. El gráfico muestra resultados medidos, no valores teóricos.</p>
+<div class="toolbar">
+<label for="byzMode">Ataque</label>
+<select id="byzMode"><option value="omit">Omitir votos</option><option value="invalid_signature">Firma inválida</option></select>
+<label for="byzRounds">Rondas</label><input id="byzRounds" type="number" min="1" max="100" value="12" />
+<label for="byzSeed">Semilla</label><input id="byzSeed" type="number" step="1" value="42" />
+<button class="primary" id="byzRun">Ejecutar comparación</button>
+<button id="byzCsv">Exportar CSV</button>
+</div>
+<div id="byzStatus" role="status" aria-live="polite">Todavía no se ha ejecutado el experimento.</div>
+<div id="byzChart" aria-label="Gráfico comparativo de QC" role="group"></div>
+<div id="byzTable"></div>
+<div id="byzRoundsDetail"></div>
+<p class="muted">La ausencia de conflictos observados no demuestra formalmente la seguridad. Dos validadores maliciosos superan f=1 para n=4.</p>
+</section>
 <section class="panel"><h2>Registro de eventos</h2><div id="events"></div></section>
 <p><small>Entorno educativo: sin transacciones farmacéuticas en este panel; los botones ejecutan operaciones del simulador en memoria. No exponer este servidor a Internet.</small></p>
 <script>
@@ -64,6 +97,32 @@ function drawFork(data){
   $('forkSummary').textContent=`Cuórum: ${data.graph.quorum} votos · QC de ataque: ${data.qc_formed_in_attack_view?'Sí':'No'} · Auditoría safety: ${data.safety.safe?'sin conflicto detectado':'conflicto detectado'} · Resultado del escenario: ${data.passed?'superado':'fallido'}. El árbol muestra bloques construidos; no todos fueron aceptados por los nodos.`;
 }
 
+$('reportRun').onclick=async()=>{
+  const target=$('reportOutput'); target.textContent='Ejecutando 30 simulaciones…';
+  $('reportRun').disabled=true;
+  try {
+    const response=await fetch('/api/benchmark/report?runs=10&rounds=12&start_seed=42');
+    if(!response.ok)throw new Error('HTTP '+response.status);
+    const report=await response.json();
+    const table=document.createElement('table');
+    const head=document.createElement('tr');
+    ['Escenario','QC medio','Desv. típica','Altura media','Safety observado'].forEach(label=>{
+      const cell=document.createElement('th');cell.textContent=label;head.appendChild(cell);
+    });table.appendChild(head);
+    report.summary.forEach(item=>{
+      const tr=document.createElement('tr');
+      [item.offline_count+' desconectados',(item.mean_qc_rate*100).toFixed(1)+'%',
+      (item.stdev_qc_rate*100).toFixed(1)+' pp',item.mean_committed_height.toFixed(2),
+      item.all_safe?'Sin conflictos':'Conflicto detectado'].forEach(value=>{
+        const td=document.createElement('td');td.textContent=value;tr.appendChild(td);
+      });table.appendChild(tr);
+    });
+    target.replaceChildren(table);
+    const note=document.createElement('p');note.className='muted';note.textContent=report.limitations;
+    target.appendChild(note);
+  }catch(error){target.textContent='Error: '+error.message;}
+  finally{$('reportRun').disabled=false;}
+};
 $('benchmarkRun').onclick=async()=>{
   const target=$('benchmarkOutput');target.textContent='Ejecutando tres escenarios…';
   $('benchmarkRun').disabled=true;
@@ -90,6 +149,52 @@ $('benchmarkRun').onclick=async()=>{
     target.append(el('p','muted',data.limitations));
   }catch(error){target.textContent='Error: '+error.message;}
   finally{$('benchmarkRun').disabled=false;}
+};
+
+// Isolated Byzantine comparison: no mutation of the interactive main network.
+function byzParams(){
+  const rounds=Number($('byzRounds').value), seed=Number($('byzSeed').value);
+  if(!Number.isInteger(rounds)||rounds<1||rounds>100)throw Error('Las rondas deben estar entre 1 y 100');
+  if(!Number.isSafeInteger(seed))throw Error('La semilla debe ser un entero válido');
+  const mode=$('byzMode').value;
+  if(!['omit','invalid_signature'].includes(mode))throw Error('Modo desconocido');
+  return new URLSearchParams({mode,rounds:String(rounds),seed:String(seed)});
+}
+function byzRender(data){
+  const chart=$('byzChart'),table=$('byzTable'),details=$('byzRoundsDetail');
+  chart.replaceChildren();table.replaceChildren();details.replaceChildren();
+  const t=el('table','');const h=el('tr','');
+  ['Maliciosos','QC / rondas','QC %','Altura confirmada','Votos inválidos','Safety'].forEach(x=>h.append(el('th','',x)));
+  t.append(h);
+  for(const item of data.scenarios){
+    const pct=(item.qc_rate*100).toFixed(1);
+    const line=el('div','byz-line');
+    line.append(el('span','',`${item.faulty_count} maliciosos · ${pct}%`));
+    const track=el('div','byz-track'),fill=el('div','byz-fill');fill.style.width=`${Math.max(0,Math.min(100,item.qc_rate*100))}%`;
+    track.append(fill);line.append(track);chart.append(line);
+    const tr=el('tr','');
+    [item.faulty_count,`${item.qc_rounds}/${item.rounds}`,`${pct}%`,item.max_committed_height,item.invalid_votes,item.safety_ok?'Sin conflictos detectados':'Conflicto detectado'].forEach(x=>tr.append(el('td','',x)));
+    t.append(tr);
+    const fold=el('details',''),summary=el('summary','',`${item.faulty_count} maliciosos · rondas individuales`);
+    const pre=el('pre','',JSON.stringify(item.round_details,null,2));fold.append(summary,pre);details.append(fold);
+  }
+  table.append(t);
+}
+$('byzRun').onclick=async()=>{
+  const button=$('byzRun'),status=$('byzStatus');
+  try{
+    const params=byzParams();button.disabled=true;status.textContent='Ejecutando tres escenarios aislados…';
+    const response=await fetch('/api/byzantine/compare?'+params.toString());
+    const data=await response.json();
+    if(!response.ok)throw Error(data.detail||`HTTP ${response.status}`);
+    byzRender(data);
+    status.textContent=`Experimento terminado · ${data.rounds} rondas por escenario · semilla ${data.seed}`;
+  }catch(error){status.textContent='Error: '+error.message;}
+  finally{button.disabled=false;}
+};
+$('byzCsv').onclick=()=>{
+  try{const params=byzParams();window.location.assign('/api/byzantine/compare.csv?'+params.toString());}
+  catch(error){$('byzStatus').textContent='Error: '+error.message;}
 };
 </script>
 </body>

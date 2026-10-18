@@ -32,23 +32,14 @@ def main():
     print("\n=== CONSENSUS EVENTS ===")
 
     for event in engine.events:
-        print(
-            f"[{event['time']:.2f}s] "
-            f"{event['event']} "
-            f"{event.get('node', '')} "
-            f"view={event.get('view', '-')}"
-        )
+        print(f"[{event['time']:.2f}s] {event['event']} {event.get('node', '')} view={event.get('view', '-')}")
 
     print("\n=== FINAL SUMMARY ===")
 
     for node_id, runtime in engine.nodes.items():
         node = runtime.node
 
-        print(
-            f"{node_id}: "
-            f"height={node.committed_height}, "
-            f"QC={node.high_qc.view if node.high_qc else 0}"
-        )
+        print(f"{node_id}: height={node.committed_height}, QC={node.high_qc.view if node.high_qc else 0}")
 
 
 if __name__ == "__main__":

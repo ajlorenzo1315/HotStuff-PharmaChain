@@ -21,9 +21,7 @@ class BlockResponse:
     certificates: tuple[QuorumCertificate, ...] = ()
 
 
-def ancestry(
-    blocks: dict[str, Block], target_hash: str, limit: int = 64
-) -> tuple[Block, ...]:
+def ancestry(blocks: dict[str, Block], target_hash: str, limit: int = 64) -> tuple[Block, ...]:
     """Return genesis-excluded ancestry; reject unknown or oversized paths."""
     if not 1 <= limit <= 256:
         raise ValueError("Invalid ancestry limit")
@@ -44,9 +42,7 @@ def ancestry(
     raise ValueError("Missing ancestor")
 
 
-def validate_response(
-    response: BlockResponse, expected_hash: str, genesis_hash: str, max_blocks: int = 64
-) -> bool:
+def validate_response(response: BlockResponse, expected_hash: str, genesis_hash: str, max_blocks: int = 64) -> bool:
     """Check structure only; caller must validate blocks against its local ledger."""
     blocks = response.blocks
     if response.target_hash != expected_hash or not 1 <= len(blocks) <= max_blocks:

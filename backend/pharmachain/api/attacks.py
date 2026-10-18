@@ -34,9 +34,7 @@ def _sync_fixture():
     source_node = sim.nodes[source].node
     blocks = ancestry(source_node.blockchain.blocks, result.block_hash)
     certificates = tuple(
-        source_node.certificates[block.block_hash]
-        for block in blocks
-        if block.block_hash in source_node.certificates
+        source_node.certificates[block.block_hash] for block in blocks if block.block_hash in source_node.certificates
     )
     if not certificates:
         raise RuntimeError("La preparación no produjo certificados")
@@ -50,19 +48,13 @@ def run_scenario(name: str) -> dict:
         raise ValueError(f"Escenario desconocido: {name}")
     if name in {"offline_leader", "quorum_loss"}:
         sim = DistributedHotStuff(LedgerState({}), validator_count=4)
-        offline = (
-            ["validator-0"]
-            if name == "offline_leader"
-            else ["validator-1", "validator-2"]
-        )
+        offline = ["validator-0"] if name == "offline_leader" else ["validator-1", "validator-2"]
         for node_id in offline:
             sim.network.disconnect(node_id)
             sim._record("ATTACK_NODE_OFFLINE", node=node_id)
         result = sim.run_round()
         passed = not result.qc_formed
-        observation = (
-            f"Vista {result.view}: {result.votes} votos; QC formado: {result.qc_formed}"
-        )
+        observation = f"Vista {result.view}: {result.votes} votos; QC formado: {result.qc_formed}"
         expected = "No se forma QC en esta ronda sin el líder/cuórum requerido"
     else:
         sim, source, recipient, response = _sync_fixture()
@@ -77,9 +69,7 @@ def run_scenario(name: str) -> dict:
             source = "validator-3"
         # Direct delivery allows us to isolate the injected response from the
         # genuine response already queued by request_sync().
-        sim._on_block_response(
-            recipient, SimpleNamespace(sender=source, payload=response)
-        )
+        sim._on_block_response(recipient, SimpleNamespace(sender=source, payload=response))
         node = sim.nodes[recipient].node
         accepted = response.target_hash in node.blockchain.blocks
         certified = response.target_hash in node.certificates

@@ -24,9 +24,7 @@ def test_tc_rejects_duplicate_signers():
     sim = make()
     v = sim.nodes["validator-0"].node.validator
     notice = SignedTimeout.create(v.validator_id, v.private_key, 1)
-    assert not TimeoutCertificate(1, (notice, notice, notice)).verify(
-        sim.public_keys, 3
-    )
+    assert not TimeoutCertificate(1, (notice, notice, notice)).verify(sim.public_keys, 3)
 
 
 def test_offline_leader_triggers_signed_view_change():

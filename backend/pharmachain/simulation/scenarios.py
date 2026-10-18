@@ -46,11 +46,7 @@ def simulate(scenario: str = "normal", rounds: int = 6, nodes: int = 4) -> dict:
                 "quorum_required": engine.quorum,
                 "event": "qc_formed"
                 if result.qc_formed
-                else (
-                    "leader_timeout"
-                    if result.block_hash is None
-                    else "insufficient_votes"
-                ),
+                else ("leader_timeout" if result.block_hash is None else "insufficient_votes"),
                 "committed_height": engine.blockchain.committed_height,
                 "high_qc_hash": engine.high_qc_hash,
                 "locks": {
@@ -64,11 +60,7 @@ def simulate(scenario: str = "normal", rounds: int = 6, nodes: int = 4) -> dict:
                     f"View {result.view}: leader {leader}; \
                     {result.votes}/{engine.quorum} votes. "
                     + ("QC certified." if result.qc_formed else "No QC formed.")
-                    + (
-                        f" Committed: {len(result.committed)} block(s)."
-                        if result.committed
-                        else " No new commits."
-                    )
+                    + (f" Committed: {len(result.committed)} block(s)." if result.committed else " No new commits.")
                 ),
             }
         )
@@ -91,9 +83,7 @@ def simulate(scenario: str = "normal", rounds: int = 6, nodes: int = 4) -> dict:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Explain HotStuff consensus round by round"
-    )
+    parser = argparse.ArgumentParser(description="Explain HotStuff consensus round by round")
     parser.add_argument("--scenario", choices=SCENARIOS, default="normal")
     parser.add_argument("--rounds", type=int, default=6)
     parser.add_argument("--nodes", type=int, default=4)

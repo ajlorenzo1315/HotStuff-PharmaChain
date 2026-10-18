@@ -26,14 +26,10 @@ def test_initial_state_and_round():
 def test_disconnect_and_reconnect():
     client = TestClient(dashboard.app)
     client.post("/api/simulation/reset")
-    disconnected = client.post(
-        "/api/simulation/disconnect", json={"node_id": "validator-2"}
-    )
+    disconnected = client.post("/api/simulation/disconnect", json={"node_id": "validator-2"})
     assert disconnected.status_code == 200
     assert disconnected.json()["nodes"][2]["online"] is False
-    reconnected = client.post(
-        "/api/simulation/reconnect", json={"node_id": "validator-2"}
-    )
+    reconnected = client.post("/api/simulation/reconnect", json={"node_id": "validator-2"})
     assert reconnected.json()["nodes"][2]["online"] is True
 
 

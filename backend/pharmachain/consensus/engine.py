@@ -36,17 +36,12 @@ class HotStuffEngine:
 
         self.blockchain = Blockchain(initial_state)
 
-        self.validators = [
-            Validator.create(f"validator-{i}") for i in range(validator_count)
-        ]
+        self.validators = [Validator.create(f"validator-{i}") for i in range(validator_count)]
 
         self.f = (validator_count - 1) // 3
         self.quorum = 2 * self.f + 1
 
-        self.public_keys = {
-            validator.validator_id: validator.public_key
-            for validator in self.validators
-        }
+        self.public_keys = {validator.validator_id: validator.public_key for validator in self.validators}
 
         self.certificates: dict[str, QuorumCertificate] = {}
 
@@ -170,9 +165,7 @@ class HotStuffEngine:
         b1_hash = b2.parent_hash
         b1 = self.blockchain.get_block(b1_hash)
 
-        if not all(
-            block_id in self.certificates for block_id in (b1_hash, b2_hash, block_hash)
-        ):
+        if not all(block_id in self.certificates for block_id in (b1_hash, b2_hash, block_hash)):
             return ()
 
         # Exigimos vistas consecutivas para esta

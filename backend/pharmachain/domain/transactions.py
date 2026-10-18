@@ -36,9 +36,7 @@ class Transaction:
 
     @property
     def tx_id(self) -> str:
-        return hashlib.sha256(
-            self.payload() + bytes.fromhex(self.signature)
-        ).hexdigest()
+        return hashlib.sha256(self.payload() + bytes.fromhex(self.signature)).hexdigest()
 
     def signed(self, private_key_hex: str) -> "Transaction":
         signature = sign_message(

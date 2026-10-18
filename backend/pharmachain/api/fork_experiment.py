@@ -1,5 +1,4 @@
-"""Controlled equivocation experiment
-against a four-validator Chained HotStuff simulator.
+"""Controlled equivocation experiment against a four-validator Chained HotStuff simulator.
 
 The leader sends two different proposals in the same view. Both use real
 PROPOSE/VOTE network messages; no committed state is injected or forged.
@@ -52,21 +51,72 @@ def run_fork_experiment() -> dict:
 
     votes_a = sim.nodes[leader_id].votes.get((view, branch_a.block_hash), {})
     votes_b = sim.nodes[leader_id].votes.get((view, branch_b.block_hash), {})
-    created = [
-        e for e in sim.events if e["event"] == "VOTE_CREATED" and e.get("view") == view
-    ]
+    created = [e for e in sim.events if e["event"] == "VOTE_CREATED" and e.get("view") == view]
     votes_by_node: dict[str, set[str]] = {}
     for event in created:
         votes_by_node.setdefault(event["node"], set()).add(event["block"])
     no_double_vote = all(len(blocks) <= 1 for blocks in votes_by_node.values())
-    qc_events = [
-        e for e in sim.events if e["event"] == "QC_FORMED" and e.get("view") == view
-    ]
+    qc_events = [e for e in sim.events if e["event"] == "QC_FORMED" and e.get("view") == view]
     audit = audit_committed_safety(sim)
     passed = no_double_vote and not qc_events and audit["safe"]
     sim._record("FORK_EXPERIMENT_RESULT", view=view, passed=passed)
 
+    # Graph is derived from actual block objects and recorded vote events.
+    graph_blocks = [
+        {
+            "id": sim.genesis_hash,
+            "parent": None,
+            "view": 0,
+            "height": 0,
+            "label": "Génesis",
+            "certified": False,
+            "committed": True,
+        },
+        {
+            "id": first.block_hash,
+            "parent": sim.genesis_hash,
+            "view": first.view,
+            "height": 1,
+            "label": "Bloque inicial",
+            "certified": True,
+            "committed": any(rt.node.blockchain.is_committed(first.block_hash) for rt in sim.nodes.values()),
+        },
+        {
+            "id": branch_a.block_hash,
+            "parent": branch_a.parent_hash,
+            "view": view,
+            "height": branch_a.height,
+            "label": "Rama A",
+            "certified": False,
+            "committed": any(rt.node.blockchain.is_committed(branch_a.block_hash) for rt in sim.nodes.values()),
+        },
+        {
+            "id": branch_b.block_hash,
+            "parent": branch_b.parent_hash,
+            "view": view,
+            "height": branch_b.height,
+            "label": "Rama B",
+            "certified": False,
+            "committed": any(rt.node.blockchain.is_committed(branch_b.block_hash) for rt in sim.nodes.values()),
+        },
+    ]
+    vote_matrix = [
+        {
+            "validator": node_id,
+            "branch": (
+                "A"
+                if branch_a.block_hash in votes_by_node.get(node_id, set())
+                else "B"
+                if branch_b.block_hash in votes_by_node.get(node_id, set())
+                else "—"
+            ),
+            "honest": node_id != leader_id,
+        }
+        for node_id in sim.nodes
+    ]
+
     return {
+        "graph": {"blocks": graph_blocks, "votes": vote_matrix, "quorum": sim.quorum, "attack_view": view},
         "scenario": "equivocating_leader",
         "title": "Líder que propone dos ramas en la misma vista",
         "passed": passed,
@@ -76,9 +126,7 @@ def run_fork_experiment() -> dict:
             "A": {"hash": branch_a.block_hash, "parent": branch_a.parent_hash},
             "B": {"hash": branch_b.block_hash, "parent": branch_b.parent_hash},
         },
-        "votes_created": {
-            node: sorted(blocks) for node, blocks in votes_by_node.items()
-        },
+        "votes_created": {node: sorted(blocks) for node, blocks in votes_by_node.items()},
         "votes_tallied_for_a": len(votes_a),
         "votes_tallied_for_b": len(votes_b),
         "double_vote_prevented": no_double_vote,
@@ -86,8 +134,7 @@ def run_fork_experiment() -> dict:
         "safety": audit,
         "events": sim.events[-120:],
         "limitations": (
-            "This tests a single equivocating leader \
-            and a particular delivery schedule; "
+            "This tests a single equivocating leader and a particular delivery schedule; "
             "it is not an exhaustive safety proof. The leader's vote collector "
             "remains honest in this experiment."
         ),

@@ -176,13 +176,7 @@ def main() -> None:
     print("\n=== VERIFIED HISTORY ===")
 
     for item in scenario.history():
-        print(
-            f"View {item['view']}: "
-            f"{item['type']} | "
-            f"{item['sender']} -> "
-            f"{item['receiver']} | "
-            f"{item['batch_id']}"
-        )
+        print(f"View {item['view']}: {item['type']} | {item['sender']} -> {item['receiver']} | {item['batch_id']}")
 
     print("\nCommitted height:", scenario.engine.blockchain.committed_height)
 

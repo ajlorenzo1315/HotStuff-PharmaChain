@@ -8,16 +8,13 @@ from __future__ import annotations
 from pathlib import Path
 from threading import RLock
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
 from pharmachain.api.attacks import SCENARIOS, run_scenario
 from pharmachain.consensus.distributed import DistributedHotStuff
-from pharmachain.consensus.safety import (
-    audit_committed_safety,
-    demonstrate_conflict_detection,
-)
+from pharmachain.consensus.safety import audit_committed_safety, demonstrate_conflict_detection
 from pharmachain.domain.state import LedgerState
 
 app = FastAPI(title="PharmaChain · Distributed HotStuff Dashboard")
@@ -136,9 +133,7 @@ def recover(action: NodeAction):
 
 @app.get("/api/attacks")
 def attack_catalog():
-    return {
-        "scenarios": [{"id": key, "title": title} for key, title in SCENARIOS.items()]
-    }
+    return {"scenarios": [{"id": key, "title": title} for key, title in SCENARIOS.items()]}
 
 
 @app.post("/api/attacks/{scenario}")
@@ -183,3 +178,80 @@ def benchmark(rounds: int = 12, seed: int = 42):
         return run_benchmark(rounds=rounds, seed=seed)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.get("/api/benchmark/report")
+def benchmark_report(runs: int = 10, rounds: int = 12, start_seed: int = 42):
+    """Multi-seed comparison; isolated from the interactive simulation."""
+    from pharmachain.api.report import collect_report
+
+    try:
+        return collect_report(runs=runs, rounds=rounds, start_seed=start_seed)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.get("/api/benchmark/report.csv")
+def benchmark_report_csv(runs: int = 10, rounds: int = 12, start_seed: int = 42):
+    from fastapi.responses import Response
+
+    from pharmachain.api.report import collect_report, report_csv
+
+    try:
+        result = collect_report(runs=runs, rounds=rounds, start_seed=start_seed)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return Response(
+        report_csv(result),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="hotstuff_runs.csv"'},
+    )
+
+
+@app.get("/api/byzantine/modes")
+def byzantine_modes():
+    """Available controlled fault models and experiment limits."""
+    return {
+        "modes": [
+            {"id": "omit", "title": "Omisión de votos"},
+            {"id": "invalid_signature", "title": "Firmas inválidas"},
+        ],
+        "validators": 4,
+        "quorum": 3,
+        "max_rounds": 100,
+        "limitations": "Fault injection at validator.vote only; not arbitrary Byzantine behavior.",
+    }
+
+
+@app.get("/api/byzantine/compare")
+def byzantine_compare(
+    mode: str = Query(default="omit"),
+    rounds: int = Query(default=12, ge=1, le=100),
+    seed: int = Query(default=42),
+):
+    """Isolated simulation; does not mutate the live dashboard network."""
+    from pharmachain.api.byzantine_benchmark import compare
+
+    try:
+        return compare(mode=mode, rounds=rounds, seed=seed)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.get("/api/byzantine/compare.csv")
+def byzantine_compare_csv(
+    mode: str = Query(default="omit"),
+    rounds: int = Query(default=12, ge=1, le=100),
+    seed: int = Query(default=42),
+):
+    from pharmachain.api.byzantine_benchmark import compare, to_csv
+
+    try:
+        result = compare(mode=mode, rounds=rounds, seed=seed)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return Response(
+        content=to_csv(result),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="hotstuff_byzantine.csv"'},
+    )

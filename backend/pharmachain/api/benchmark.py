@@ -15,11 +15,7 @@ from pharmachain.domain.state import LedgerState
 
 
 def run_benchmark(rounds: int = 12, seed: int = 42) -> dict:
-    if (
-        not isinstance(rounds, int)
-        or isinstance(rounds, bool)
-        or not 1 <= rounds <= 100
-    ):
+    if not isinstance(rounds, int) or isinstance(rounds, bool) or not 1 <= rounds <= 100:
         raise ValueError(
             "rounds must be an \
         integer between 1 and 100"

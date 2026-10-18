@@ -39,9 +39,7 @@ class NetworkEvent:
 
 
 class SimulatedNetwork:
-    def __init__(
-        self, *, latency: float = 0.1, loss_rate: float = 0.0, seed: int = 42
-    ) -> None:
+    def __init__(self, *, latency: float = 0.1, loss_rate: float = 0.0, seed: int = 42) -> None:
         if latency < 0:
             raise ValueError("latency must be nonnegative")
         if not 0 <= loss_rate <= 1:
@@ -85,11 +83,7 @@ class SimulatedNetwork:
         self.blocked_links.clear()
 
     def _log(self, action: str, msg: Envelope) -> None:
-        self.events.append(
-            NetworkEvent(
-                self.time, action, msg.message_id, msg.sender, msg.recipient, msg.kind
-            )
-        )
+        self.events.append(NetworkEvent(self.time, action, msg.message_id, msg.sender, msg.recipient, msg.kind))
 
     def send(
         self,
@@ -132,9 +126,7 @@ class SimulatedNetwork:
             )
         return ids
 
-    def broadcast(
-        self, sender: str, kind: str, payload: Any, *, include_sender: bool = False
-    ) -> None:
+    def broadcast(self, sender: str, kind: str, payload: Any, *, include_sender: bool = False) -> None:
         for recipient in self._handlers:
             if include_sender or recipient != sender:
                 self.send(sender, recipient, kind, payload)
@@ -149,11 +141,7 @@ class SimulatedNetwork:
             event = heapq.heappop(self._queue)
             self.time = event.deliver_at
             msg = event.envelope
-            if (
-                msg.sender in self.offline
-                or msg.recipient in self.offline
-                or (msg.sender, msg.recipient) in self.blocked_links
-            ):
+            if msg.sender in self.offline or msg.recipient in self.offline or (msg.sender, msg.recipient) in self.blocked_links:
                 self._log("DROPPED", msg)
             else:
                 self._log("DELIVERED", msg)

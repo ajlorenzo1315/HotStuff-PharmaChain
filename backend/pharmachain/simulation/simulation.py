@@ -80,10 +80,7 @@ class Simulation:
 
         was_active = leader.active
 
-        previous_votes = {
-            validator.validator_id: set(validator.voted_views)
-            for validator in self.engine.validators
-        }
+        previous_votes = {validator.validator_id: set(validator.voted_views) for validator in self.engine.validators}
 
         result = self.engine.run_round(transactions)
 
@@ -118,10 +115,7 @@ class Simulation:
             )
 
             for validator in self.engine.validators:
-                voted_now = (
-                    view in validator.voted_views
-                    and view not in previous_votes[validator.validator_id]
-                )
+                voted_now = view in validator.voted_views and view not in previous_votes[validator.validator_id]
 
                 if voted_now:
                     produced.append(

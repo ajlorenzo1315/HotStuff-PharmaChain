@@ -19,7 +19,4 @@ def test_fork_branches_are_distinct():
 
 def test_attack_uses_actual_vote_messages():
     result = run_fork_experiment()
-    assert any(
-        event["event"] == "VOTE_CREATED" and event.get("view") == result["view"]
-        for event in result["events"]
-    )
+    assert any(event["event"] == "VOTE_CREATED" and event.get("view") == result["view"] for event in result["events"])

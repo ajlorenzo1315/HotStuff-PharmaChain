@@ -35,7 +35,7 @@ pythonpath = ["."]
 addopts = "-ra"
 
 [tool.ruff]
-line-length = 88
+line-length = 128
 target-version = "py311"
 
 extend-exclude = [

@@ -17,9 +17,7 @@ def test_valid_ancestry():
     genesis, b1, b2 = sample_chain()
     path = ancestry({b.block_hash: b for b in (genesis, b1, b2)}, b2.block_hash)
     assert path == (b1, b2)
-    assert validate_response(
-        BlockResponse(b2.block_hash, path), b2.block_hash, genesis.block_hash
-    )
+    assert validate_response(BlockResponse(b2.block_hash, path), b2.block_hash, genesis.block_hash)
 
 
 def test_missing_parent_rejected():

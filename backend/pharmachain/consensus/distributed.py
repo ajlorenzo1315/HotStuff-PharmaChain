@@ -94,9 +94,7 @@ class DistributedHotStuff:
             seed=seed,
         )
 
-        validators = [
-            Validator.create(f"validator-{i}") for i in range(validator_count)
-        ]
+        validators = [Validator.create(f"validator-{i}") for i in range(validator_count)]
 
         self.public_keys = {v.validator_id: v.public_key for v in validators}
 
@@ -118,9 +116,7 @@ class DistributedHotStuff:
                 lambda msg, nid=validator.validator_id: self._receive(nid, msg),
             )
 
-        self.genesis_hash = next(
-            iter(self.nodes.values())
-        ).node.blockchain.genesis.block_hash
+        self.genesis_hash = next(iter(self.nodes.values())).node.blockchain.genesis.block_hash
 
     def _record(self, event: str, **details) -> None:
         self.events.append(
@@ -440,9 +436,7 @@ class DistributedHotStuff:
         if not tc.verify(self.public_keys, self.quorum):
             return
         runtime.formed_tcs.add(notice.view)
-        self._record(
-            "TC_FORMED", node=recipient, view=notice.view, signers=sorted(collected)
-        )
+        self._record("TC_FORMED", node=recipient, view=notice.view, signers=sorted(collected))
         self.network.broadcast(recipient, "TC", tc, include_sender=True)
 
     def _on_tc(self, recipient: str, msg: Envelope) -> None:
@@ -488,9 +482,7 @@ class DistributedHotStuff:
             NewViewCollector(message.view, self.public_keys, self.quorum),
         )
         if not collector.add(message):
-            self._record(
-                "NEW_VIEW_REJECTED", node=recipient, reason="invalid_or_duplicate"
-            )
+            self._record("NEW_VIEW_REJECTED", node=recipient, reason="invalid_or_duplicate")
             return
         self._record(
             "NEW_VIEW_ACCEPTED",
@@ -510,11 +502,7 @@ class DistributedHotStuff:
 
     def request_sync(self, recipient: str, source: str, target_hash: str) -> None:
         """Ask a peer for a bounded ancestry path; never accept a commit from it."""
-        if (
-            recipient == source
-            or recipient not in self.nodes
-            or source not in self.nodes
-        ):
+        if recipient == source or recipient not in self.nodes or source not in self.nodes:
             return
         runtime = self.nodes[recipient]
         if target_hash in runtime.node.blockchain.blocks:
@@ -540,9 +528,7 @@ class DistributedHotStuff:
             return
         # Only send certificates already verified by the responding node.
         known = self.nodes[recipient].node.certificates
-        certificates = tuple(
-            known[block.block_hash] for block in path if block.block_hash in known
-        )
+        certificates = tuple(known[block.block_hash] for block in path if block.block_hash in known)
         self.network.send(
             recipient,
             msg.sender,
@@ -573,9 +559,7 @@ class DistributedHotStuff:
                 try:
                     candidate_chain.add_block(block)
                 except Exception:
-                    self._record(
-                        "SYNC_REJECTED", node=recipient, reason="invalid_block"
-                    )
+                    self._record("SYNC_REJECTED", node=recipient, reason="invalid_block")
                     return
 
         # Validate every QC against the candidate blocks before accepting any.
@@ -626,11 +610,7 @@ class DistributedHotStuff:
         if node_id not in self.nodes:
             raise ValueError(f"Unknown node: {node_id}")
         self.network.reconnect(node_id)
-        peers = [
-            peer
-            for peer in self.nodes
-            if peer != node_id and peer not in self.network.offline
-        ]
+        peers = [peer for peer in self.nodes if peer != node_id and peer not in self.network.offline]
         if source is not None:
             if source not in peers:
                 raise ValueError("Source must be a different online validator")
@@ -641,11 +621,7 @@ class DistributedHotStuff:
         # Peer is only a source of candidate data, never an authority to commit.
         peer_id = max(
             peers,
-            key=lambda peer: (
-                self.nodes[peer].node.high_qc.view
-                if self.nodes[peer].node.high_qc is not None
-                else 0
-            ),
+            key=lambda peer: (self.nodes[peer].node.high_qc.view if self.nodes[peer].node.high_qc is not None else 0),
         )
         peer_node = self.nodes[peer_id].node
         qc = peer_node.high_qc
@@ -657,9 +633,7 @@ class DistributedHotStuff:
             self._record("RECOVERY_WAITING", node=node_id, reason="blocks_present")
             return False
         runtime.recovering = True
-        self._record(
-            "RECOVERY_STARTED", node=node_id, peer=peer_id, block=qc.block_hash
-        )
+        self._record("RECOVERY_STARTED", node=node_id, peer=peer_id, block=qc.block_hash)
         self.request_sync(node_id, peer_id, qc.block_hash)
         self.network.run()
         return not runtime.recovering
@@ -670,9 +644,7 @@ class DistributedHotStuff:
         for node_id, runtime in self.nodes.items():
             if node_id in self.network.offline or runtime.node.view != view:
                 continue
-            notice = SignedTimeout.create(
-                node_id, runtime.node.validator.private_key, view
-            )
+            notice = SignedTimeout.create(node_id, runtime.node.validator.private_key, view)
             self._record("TIMEOUT_SENT", node=node_id, view=view)
             self.network.send(node_id, next_leader, "TIMEOUT", notice)
         self.network.run()
@@ -700,9 +672,7 @@ class DistributedHotStuff:
                 )
             if collector is not None and collector.ready:
                 selected = collector.highest_qc()
-                if selected is not None and (
-                    leader.high_qc is None or selected.view > leader.high_qc.view
-                ):
+                if selected is not None and (leader.high_qc is None or selected.view > leader.high_qc.view):
                     if selected.block_hash not in leader.blockchain.blocks:
                         self._record(
                             "SYNC_REQUIRED",
@@ -713,13 +683,10 @@ class DistributedHotStuff:
                         sources = [
                             m.validator_id
                             for m in collector.messages.values()
-                            if m.high_qc is not None
-                            and m.high_qc.block_hash == selected.block_hash
+                            if m.high_qc is not None and m.high_qc.block_hash == selected.block_hash
                         ]
                         if sources:
-                            self.request_sync(
-                                leader_id, sources[0], selected.block_hash
-                            )
+                            self.request_sync(leader_id, sources[0], selected.block_hash)
                             self.network.run()
                         return RoundResult(
                             current_view,
@@ -727,17 +694,10 @@ class DistributedHotStuff:
                             None,
                             0,
                             False,
-                            {
-                                nid: rt.node.committed_height
-                                for nid, rt in self.nodes.items()
-                            },
+                            {nid: rt.node.committed_height for nid, rt in self.nodes.items()},
                         )
                     leader.receive_qc(selected)
-            parent_hash = (
-                leader.high_qc.block_hash
-                if leader.high_qc is not None
-                else self.genesis_hash
-            )
+            parent_hash = leader.high_qc.block_hash if leader.high_qc is not None else self.genesis_hash
 
             # Si el líder desconoce el bloque padre,
             # no puede construir una propuesta válida.
@@ -779,18 +739,13 @@ class DistributedHotStuff:
         if block_hash is not None:
             key = (current_view, block_hash)
             votes = len(self.nodes[leader_id].votes.get(key, {}))
-            qc_formed = any(
-                event["event"] == "QC_FORMED" and event.get("view") == current_view
-                for event in self.events
-            )
+            qc_formed = any(event["event"] == "QC_FORMED" and event.get("view") == current_view for event in self.events)
 
         if qc_formed:
             # A successful round advances only online nodes that received
             # the certificate; disconnected nodes retain their local view.
             for node_id, runtime in self.nodes.items():
-                if node_id not in self.network.offline and (
-                    block_hash in runtime.node.certificates
-                ):
+                if node_id not in self.network.offline and (block_hash in runtime.node.certificates):
                     runtime.node.view = max(runtime.node.view, current_view + 1)
                     self._send_new_view(node_id, runtime.node.view)
             self.network.run()
@@ -807,8 +762,5 @@ class DistributedHotStuff:
             block_hash=block_hash,
             votes=votes,
             qc_formed=qc_formed,
-            committed_heights={
-                nid: runtime.node.committed_height
-                for nid, runtime in self.nodes.items()
-            },
+            committed_heights={nid: runtime.node.committed_height for nid, runtime in self.nodes.items()},
         )

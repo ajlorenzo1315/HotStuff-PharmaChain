@@ -23,9 +23,7 @@ def test_three_chain_emits_commit():
     for _ in range(3):
         engine.run_round()
 
-    commits = [
-        event for event in engine.event_history if event["type"] == "BLOCK_COMMITTED"
-    ]
+    commits = [event for event in engine.event_history if event["type"] == "BLOCK_COMMITTED"]
 
     assert len(commits) == 1
     assert engine.blockchain.committed_height == 1

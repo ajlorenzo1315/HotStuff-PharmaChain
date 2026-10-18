@@ -19,19 +19,13 @@ def setup_missing_block():
     sim.request_sync("validator-2", sender, target)
     source_node = sim.nodes[sender].node
     blocks = ancestry(source_node.blockchain.blocks, target)
-    qcs = tuple(
-        source_node.certificates[b.block_hash]
-        for b in blocks
-        if b.block_hash in source_node.certificates
-    )
+    qcs = tuple(source_node.certificates[b.block_hash] for b in blocks if b.block_hash in source_node.certificates)
     assert qcs
     return sim, sender, BlockResponse(target, blocks, qcs)
 
 
 def deliver(sim, sender, response):
-    sim._on_block_response(
-        "validator-2", SimpleNamespace(sender=sender, payload=response)
-    )
+    sim._on_block_response("validator-2", SimpleNamespace(sender=sender, payload=response))
 
 
 def assert_rejected_without_mutation(sim, target):
@@ -59,9 +53,7 @@ def test_reject_forged_qc_without_mutation():
 
 def test_reject_duplicate_qc_without_mutation():
     sim, sender, response = setup_missing_block()
-    deliver(
-        sim, sender, replace(response, certificates=(response.certificates[0],) * 2)
-    )
+    deliver(sim, sender, replace(response, certificates=(response.certificates[0],) * 2))
     assert_rejected_without_mutation(sim, response.target_hash)
 
 

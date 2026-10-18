@@ -83,8 +83,6 @@ def test_no_conflicting_commits_in_ideal_network():
     sim = make_simulator()
     for _ in range(6):
         sim.run_round()
-    committed = [
-        tuple(runtime.node.blockchain.committed) for runtime in sim.nodes.values()
-    ]
+    committed = [tuple(runtime.node.blockchain.committed) for runtime in sim.nodes.values()]
     assert all(chain == committed[0] for chain in committed)
     assert len(committed[0]) > 1

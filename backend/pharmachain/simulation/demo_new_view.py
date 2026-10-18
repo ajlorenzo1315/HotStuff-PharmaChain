@@ -11,12 +11,7 @@ sim.network.disconnect("validator-0")
 
 for _ in range(3):
     result = sim.run_round()
-    print(
-        f"Vista={result.view}, "
-        f"Líder={result.leader}, "
-        f"Votos={result.votes}, "
-        f"QC={result.qc_formed}"
-    )
+    print(f"Vista={result.view}, Líder={result.leader}, Votos={result.votes}, QC={result.qc_formed}")
 
 print("\n=== EVENTOS DE CAMBIO DE VISTA ===")
 

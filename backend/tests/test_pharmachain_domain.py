@@ -99,9 +99,7 @@ def test_duplicate_transaction(environment):
 
 
 def test_unauthorized_transfer(environment):
-    state = environment["state"].apply(
-        register_transaction(environment["manufacturer_private"])
-    )
+    state = environment["state"].apply(register_transaction(environment["manufacturer_private"]))
 
     tx = Transaction(
         tx_type=TransactionType.TRANSFER_BATCH,

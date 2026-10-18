@@ -17,10 +17,7 @@ def qc_fingerprint(qc: QuorumCertificate | None) -> str:
     data = {
         "view": qc.view,
         "block_hash": qc.block_hash,
-        "votes": sorted(
-            (vote.validator_id, vote.view, vote.block_hash, vote.signature)
-            for vote in qc.votes
-        ),
+        "votes": sorted((vote.validator_id, vote.view, vote.block_hash, vote.signature) for vote in qc.votes),
     }
     payload = json.dumps(data, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(payload).hexdigest()

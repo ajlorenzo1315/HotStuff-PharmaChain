@@ -25,11 +25,7 @@ class SignedTimeout:
 
     def verify(self, public_keys: dict[str, str]) -> bool:
         key = public_keys.get(self.validator_id)
-        return bool(
-            key
-            and self.view > 0
-            and verify_signature(key, timeout_payload(self.view), self.signature)
-        )
+        return bool(key and self.view > 0 and verify_signature(key, timeout_payload(self.view), self.signature))
 
 
 @dataclass(frozen=True)
@@ -42,6 +38,5 @@ class TimeoutCertificate:
             return False
         signers = [notice.validator_id for notice in self.notices]
         return len(signers) == len(set(signers)) and all(
-            notice.view == self.view and notice.verify(public_keys)
-            for notice in self.notices
+            notice.view == self.view and notice.verify(public_keys) for notice in self.notices
         )

@@ -35,9 +35,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="HotStuff PharmaChain API",
     version="0.1.0",
-    description=(
-        "Educational pharmaceutical traceability with a centralized HotStuff simulator."
-    ),
+    description=("Educational pharmaceutical traceability with a centralized HotStuff simulator."),
     lifespan=lifespan,
 )
 

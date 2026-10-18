@@ -15,9 +15,7 @@ def validators():
 
 
 def qc_for(private, view, block_hash):
-    votes = tuple(
-        Vote.create(name, private[name], view, block_hash) for name in list(private)[:3]
-    )
+    votes = tuple(Vote.create(name, private[name], view, block_hash) for name in list(private)[:3])
     return QuorumCertificate(view, block_hash, votes)
 
 
@@ -38,9 +36,7 @@ def test_tampered_view_and_qc_are_rejected():
 
 def test_invalid_qc_is_rejected():
     private, public = validators()
-    bad_qc = QuorumCertificate(
-        1, "block", (Vote.create("validator-0", private["validator-0"], 1, "block"),)
-    )
+    bad_qc = QuorumCertificate(1, "block", (Vote.create("validator-0", private["validator-0"], 1, "block"),))
     msg = NewView.create("validator-0", private["validator-0"], 2, bad_qc)
     assert not msg.verify(public, 3)
 
