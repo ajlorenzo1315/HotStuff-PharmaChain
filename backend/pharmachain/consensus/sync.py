@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from pharmachain.blockchain.block import Block
+from pharmachain.consensus.messages import QuorumCertificate
 
 
 @dataclass(frozen=True)
@@ -17,6 +18,7 @@ class BlockRequest:
 class BlockResponse:
     target_hash: str
     blocks: tuple[Block, ...]  # oldest ancestor first, target last
+    certificates: tuple[QuorumCertificate, ...] = ()
 
 
 def ancestry(

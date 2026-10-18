@@ -65,6 +65,7 @@ class NodeRuntime:
     formed_tcs: set[int] = field(default_factory=set)
     new_views: dict[int, NewViewCollector] = field(default_factory=dict)
     pending_sync: dict[str, str] = field(default_factory=dict)
+    recovering: bool = False
 
 
 class DistributedHotStuff:
@@ -533,11 +534,16 @@ class DistributedHotStuff:
         except ValueError:
             self._record("BLOCK_UNAVAILABLE", node=recipient, block=request.target_hash)
             return
+        # Only send certificates already verified by the responding node.
+        known = self.nodes[recipient].node.certificates
+        certificates = tuple(
+            known[block.block_hash] for block in path if block.block_hash in known
+        )
         self.network.send(
             recipient,
             msg.sender,
             "BLOCK_RESPONSE",
-            BlockResponse(request.target_hash, path),
+            BlockResponse(request.target_hash, path, certificates),
         )
 
     def _on_block_response(self, recipient: str, msg: Envelope) -> None:
@@ -563,9 +569,89 @@ class DistributedHotStuff:
             if not node.receive_block(block):
                 self._record("SYNC_REJECTED", node=recipient, reason="invalid_block")
                 return
+        # Do not trust the peer's commit height. Verify each QC locally.
+        block_hashes = {block.block_hash for block in response.blocks}
+        seen_qcs: set[str] = set()
+        for qc in response.certificates:
+            if qc.block_hash not in block_hashes or qc.block_hash in seen_qcs:
+                self._record("SYNC_REJECTED", node=recipient, reason="unexpected_qc")
+                return
+            seen_qcs.add(qc.block_hash)
+            if not qc.verify(self.public_keys, self.quorum):
+                self._record("SYNC_REJECTED", node=recipient, reason="invalid_qc")
+                return
+            block = node.blockchain.blocks[qc.block_hash]
+            if block.view != qc.view:
+                self._record("SYNC_REJECTED", node=recipient, reason="qc_view_mismatch")
+                return
+        for qc in sorted(response.certificates, key=lambda item: item.view):
+            node.receive_qc(qc)
+            self._update_chain(node, qc.block_hash)
         del runtime.pending_sync[response.target_hash]
-        self._record("SYNC_COMPLETED", node=recipient, block=response.target_hash)
-        # Sync only supplies data: QC validation and commit rules remain separate.
+        self._record(
+            "SYNC_COMPLETED",
+            node=recipient,
+            block=response.target_hash,
+            certificates=len(response.certificates),
+        )
+        if runtime.recovering:
+            runtime.recovering = False
+            # A recovered node must not vote in past views.
+            node.view = max(node.view, self.view)
+            self._record(
+                "NODE_RECOVERED",
+                node=recipient,
+                view=node.view,
+                height=node.committed_height,
+            )
+            self._send_new_view(recipient, node.view)
+
+    def reconnect_and_sync(self, node_id: str, source: str | None = None) -> bool:
+        """Reconnect a lagging node; request a certified ancestry from an online peer.
+
+        Returns False when no suitable online peer or certified target exists.
+        This is an educational, single-response catch-up (up to 64 blocks).
+        """
+        if node_id not in self.nodes:
+            raise ValueError(f"Unknown node: {node_id}")
+        self.network.reconnect(node_id)
+        peers = [
+            peer
+            for peer in self.nodes
+            if peer != node_id and peer not in self.network.offline
+        ]
+        if source is not None:
+            if source not in peers:
+                raise ValueError("Source must be a different online validator")
+            peers = [source]
+        if not peers:
+            self._record("RECOVERY_WAITING", node=node_id, reason="no_peer")
+            return False
+        # Peer is only a source of candidate data, never an authority to commit.
+        peer_id = max(
+            peers,
+            key=lambda peer: (
+                self.nodes[peer].node.high_qc.view
+                if self.nodes[peer].node.high_qc is not None
+                else 0
+            ),
+        )
+        peer_node = self.nodes[peer_id].node
+        qc = peer_node.high_qc
+        if qc is None:
+            self._record("RECOVERY_WAITING", node=node_id, reason="no_qc")
+            return False
+        runtime = self.nodes[node_id]
+        if qc.block_hash in runtime.node.blockchain.blocks:
+            self._record("RECOVERY_WAITING", node=node_id, reason="blocks_present")
+            return False
+        runtime.recovering = True
+        self._record(
+            "RECOVERY_STARTED", node=node_id, peer=peer_id, block=qc.block_hash
+        )
+        self.request_sync(node_id, peer_id, qc.block_hash)
+        self.network.run()
+        return not runtime.recovering
 
     def trigger_timeouts(self, view: int) -> None:
         """Educational timeout trigger; network transports signed notices."""
