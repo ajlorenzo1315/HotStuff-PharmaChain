@@ -44,8 +44,15 @@ class RoundResult:
 @dataclass
 class NodeRuntime:
     node: HotStuffNode
-    votes: dict[tuple[int, str], dict[str, Vote]] = field(default_factory=dict)
+
+    votes: dict[
+        tuple[int, str],
+        dict[str, Vote],
+    ] = field(default_factory=dict)
+
     proposed: dict[int, str] = field(default_factory=dict)
+
+    formed_qcs: set[tuple[int, str]] = field(default_factory=set)
 
 
 class DistributedHotStuff:
@@ -59,11 +66,11 @@ class DistributedHotStuff:
         if validator_count < 4:
             raise ValueError("At least four validators required")
 
-        if (validator_count - 1) % 3 != 0:
-            raise ValueError("Validator count must be 3f + 1")
-
+        # El valor 2f+1 sigue siendo correcto cuando n=3f+1,
+        # como sucede con tus cuatro validadores.
         self.f = (validator_count - 1) // 3
-        self.quorum = 2 * self.f + 1
+        self.quorum = validator_count - self.f
+
         self.view = 1
 
         self.network = SimulatedNetwork(
@@ -78,6 +85,7 @@ class DistributedHotStuff:
         self.public_keys = {v.validator_id: v.public_key for v in validators}
 
         self.nodes: dict[str, NodeRuntime] = {}
+        self.events: list[dict] = []
 
         for validator in validators:
             node = HotStuffNode.create(
@@ -87,19 +95,16 @@ class DistributedHotStuff:
                 quorum=self.quorum,
             )
 
-            runtime = NodeRuntime(node=node)
-            self.nodes[node.node_id] = runtime
+            self.nodes[validator.validator_id] = NodeRuntime(node=node)
 
             self.network.register(
-                node.node_id,
-                lambda msg, nid=node.node_id: self._receive(nid, msg),
+                validator.validator_id,
+                lambda msg, nid=validator.validator_id: self._receive(nid, msg),
             )
 
         self.genesis_hash = next(
             iter(self.nodes.values())
         ).node.blockchain.genesis.block_hash
-
-        self.events: list[dict] = []
 
     def _record(self, event: str, **details) -> None:
         self.events.append(
@@ -279,7 +284,10 @@ class DistributedHotStuff:
             count=len(collected),
         )
 
-        if len(collected) != self.quorum:
+        if len(collected) < self.quorum:
+            return
+
+        if vote_key in runtime.formed_qcs:
             return
 
         qc = QuorumCertificate(
@@ -290,6 +298,8 @@ class DistributedHotStuff:
 
         if not qc.verify(self.public_keys, self.quorum):
             return
+
+        runtime.formed_qcs.add(vote_key)
 
         self._record(
             "QC_FORMED",
