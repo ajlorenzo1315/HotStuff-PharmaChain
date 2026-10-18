@@ -4,7 +4,14 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PharmaChain · HotStuff Lab</title>
 <style>
-:root{color-scheme:dark;font-family:system-ui,Arial,sans-serif;background:#0b1220;color:#e7edf8}*{box-sizing:border-box}body{max-width:1180px;margin:auto;padding:26px}h1{font-size:28px;margin:0 0 8px}.sub{color:#a4b2c8;margin:0 0 26px}.toolbar{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}button{background:#243b5d;color:white;border:1px solid #426188;border-radius:9px;padding:10px 14px;cursor:pointer}button:hover{background:#35547d}button:disabled{opacity:.5;cursor:wait}.primary{background:#156eaa}.layout{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.node,.panel{background:#151f30;border:1px solid #2b3d58;border-radius:14px;padding:18px}.node h3{margin:0 0 10px}.muted{color:#a4b2c8;font-size:13px}.online{color:#61dfa7}.offline{color:#ff8d8d}.stats{display:flex;gap:25px;flex-wrap:wrap;margin:18px 0}.stat strong{display:block;font-size:22px}.panel{margin-top:18px}#events{max-height:350px;overflow:auto;font-family:ui-monospace,monospace;font-size:12px}.event{padding:8px;border-bottom:1px solid #29394f;overflow-wrap:anywhere}#error{color:#ff9c9c;min-height:22px}small{color:#a4b2c8}@media(max-width:760px){.layout{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:420px){.layout{grid-template-columns:1fr}}</style>
+:root{color-scheme:dark;font-family:system-ui,Arial,sans-serif;background:#0b1220;color:#e7edf8}*{box-sizing:border-box}body{max-width:1180px;margin:auto;padding:26px}h1{font-size:28px;margin:0 0 8px}.sub{color:#a4b2c8;margin:0 0 26px}.toolbar{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}button{background:#243b5d;color:white;border:1px solid #426188;border-radius:9px;padding:10px 14px;cursor:pointer}button:hover{background:#35547d}button:disabled{opacity:.5;cursor:wait}.primary{background:#156eaa}.layout{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.node,.panel{background:#151f30;border:1px solid #2b3d58;border-radius:14px;padding:18px}.node h3{margin:0 0 10px}.muted{color:#a4b2c8;font-size:13px}.online{color:#61dfa7}.offline{color:#ff8d8d}.stats{display:flex;gap:25px;flex-wrap:wrap;margin:18px 0}.stat strong{display:block;font-size:22px}.panel{margin-top:18px}#events{max-height:350px;overflow:auto;font-family:ui-monospace,monospace;font-size:12px}.event{padding:8px;border-bottom:1px solid #29394f;overflow-wrap:anywhere}#error{color:#ff9c9c;min-height:22px}small{color:#a4b2c8}@media(max-width:760px){.layout{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:420px){.layout{grid-template-columns:1fr}}
+#forkGraph{margin-top:14px;border:1px solid #324764;border-radius:12px;padding:14px;background:#0d1728}
+#forkGraph svg{width:100%;height:auto;display:block}
+#forkVotes{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px;margin-top:12px}
+.voteBox{padding:12px;border:1px solid #3b526e;border-radius:10px;background:#19263b}
+.voteBox strong{display:block;margin-bottom:5px}
+#forkSummary{margin-top:10px;font-size:14px;line-height:1.5}
+</style>
 </head>
 <body>
 <h1>⛓ PharmaChain · HotStuff Lab</h1>
@@ -14,7 +21,8 @@
 <div class="stats"><div class="stat"><small>Vista global</small><strong id="view">—</strong></div><div class="stat"><small>Líder esperado</small><strong id="leader">—</strong></div><div class="stat"><small>Cuórum</small><strong id="quorum">—</strong></div><div class="stat"><small>Última ronda</small><strong id="last">—</strong></div></div>
 <div id="nodes" class="layout"></div>
 <section class="panel"><h2>Laboratorio de ataques bizantinos</h2><p class="muted">Cada escenario se ejecuta en una red aislada. El resultado es una comprobación automática, no una garantía formal de seguridad.</p><div class="toolbar"><select id="scenario" aria-label="Escenario de ataque" style="background:#243b5d;color:#fff;border:1px solid #426188;border-radius:9px;padding:10px"></select><button class="primary" id="attack">Ejecutar escenario</button></div><div id="attackResult" role="status" class="muted">Selecciona un escenario para ver la evidencia.</div><div id="attackEvents" style="max-height:260px;overflow:auto;font-family:monospace;font-size:12px"></div></section>
-<section class="panel"><h2>Auditoría de safety: commits incompatibles</h2><p class="muted">Compara los prefijos confirmados de todos los validadores. El experimento de conflicto artificial prueba el detector, no una vulnerabilidad de HotStuff.</p><div class="toolbar"><button id="safetyCheck">Auditar red actual</button><button id="safetyConflict">Inyectar conflicto de prueba</button><button class="primary" id="safetyFork">Simular líder equivocado (dos ramas)</button></div><pre id="safetyResult" style="white-space:pre-wrap;overflow-wrap:anywhere" role="status">Sin ejecutar</pre></section>
+<section class="panel"><h2>Auditoría de safety: commits incompatibles</h2><p class="muted">Compara los prefijos confirmados de todos los validadores. El experimento de conflicto artificial prueba el detector, no una vulnerabilidad de HotStuff.</p><div class="toolbar"><button id="safetyCheck">Auditar red actual</button><button id="safetyConflict">Inyectar conflicto de prueba</button><button class="primary" id="safetyFork">Simular líder equivocado (dos ramas)</button></div><pre id="safetyResult" style="white-space:pre-wrap;overflow-wrap:anywhere" role="status">Sin ejecutar</pre><div id="forkGraph" hidden><h3>Árbol de bloques del experimento</h3><svg id="forkTree" viewBox="0 0 720 330" role="img" aria-label="Árbol de bloques y bifurcaciones"></svg><div id="forkVotes"></div><div id="forkSummary" role="status"></div></div></section>
+<section class="panel"><h2>Comparativa de tolerancia a fallos</h2><p class="muted">Tres simulaciones aisladas: 0, 1 o 2 validadores desconectados. Los tiempos son simulados; no representan rendimiento real.</p><div class="toolbar"><button class="primary" id="benchmarkRun">Comparar 12 rondas</button></div><div id="benchmarkOutput" role="status">Sin ejecutar</div></section>
 <section class="panel"><h2>Registro de eventos</h2><div id="events"></div></section>
 <p><small>Entorno educativo: sin transacciones farmacéuticas en este panel; los botones ejecutan operaciones del simulador en memoria. No exponer este servidor a Internet.</small></p>
 <script>
@@ -29,10 +37,60 @@ async function executeAttack(){if(busy)return;busy=true;$('attack').disabled=tru
 $('attack').onclick=executeAttack;loadAttacks();
 $('step').onclick=()=>api('/round',{});$('reset').onclick=()=>api('/reset',{});$('refresh').onclick=()=>api('');api('');
 
-async function safetyRequest(path,method='GET'){const out=$('safetyResult');out.textContent='Analizando…';try{const response=await fetch(path,{method});const data=await response.json();if(!response.ok)throw Error(data.detail||`HTTP ${response.status}`);out.textContent=JSON.stringify(data,null,2);}catch(error){out.textContent='Error: '+error.message;}}
+async function safetyRequest(path,method='GET'){const out=$('safetyResult');out.textContent='Analizando…';try{const response=await fetch(path,{method});const data=await response.json();if(!response.ok)throw Error(data.detail||`HTTP ${response.status}`);out.textContent=JSON.stringify(data,null,2);if(path==='/api/safety/equivocation'&&data.graph){drawFork(data);}}catch(error){out.textContent='Error: '+error.message;}}
 $('safetyCheck').onclick=()=>safetyRequest('/api/safety');
 $('safetyConflict').onclick=()=>safetyRequest('/api/safety/injected-conflict','POST');
 $('safetyFork').onclick=()=>safetyRequest('/api/safety/equivocation','POST');
+function drawFork(data){
+  const panel=$('forkGraph'), svg=$('forkTree');panel.hidden=false;svg.replaceChildren();
+  const blocks=data.graph.blocks;
+  const positions=[[360,42],[360,137],[175,245],[545,245]];
+  const byId=new Map(blocks.map((b,i)=>[b.id,{b,i}]));
+  const NS='http://www.w3.org/2000/svg';
+  const add=(tag,attrs,text)=>{const e=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,String(v));if(text!==undefined)e.textContent=text;svg.append(e);return e;};
+  for(let i=1;i<blocks.length;i++){
+    const b=blocks[i],p=byId.get(b.parent);if(!p)continue;
+    const [x,y]=positions[i],[px,py]=positions[p.i];
+    add('path',{d:`M ${px} ${py+27} L ${px} ${(py+y)/2} L ${x} ${(py+y)/2} L ${x} ${y-27}`,stroke:'#7893b4','stroke-width':2,fill:'none'});
+  }
+  blocks.forEach((b,i)=>{
+    const [x,y]=positions[i];const fill=b.committed?'#176b53':b.certified?'#17698d':'#4a355f';
+    add('rect',{x:x-104,y:y-27,width:208,height:54,rx:10,fill,stroke:b.certified?'#70c8e8':'#8595b1','stroke-width':1.4});
+    add('text',{x,y:y-5,'text-anchor':'middle',fill:'#fff','font-size':15,'font-weight':'bold'},b.label);
+    add('text',{x,y:y+14,'text-anchor':'middle',fill:'#e0e9f6','font-size':11},`Vista ${b.view} · ${b.id.slice(0,10)}…`);
+  });
+  const votes=$('forkVotes');votes.replaceChildren();
+  for(const v of data.graph.votes){const box=el('div','voteBox');box.append(el('strong','',v.validator),el('span','',`Voto: ${v.branch} · ${v.honest?'Honesto':'Líder bizantino'}`));votes.append(box);}
+  $('forkSummary').textContent=`Cuórum: ${data.graph.quorum} votos · QC de ataque: ${data.qc_formed_in_attack_view?'Sí':'No'} · Auditoría safety: ${data.safety.safe?'sin conflicto detectado':'conflicto detectado'} · Resultado del escenario: ${data.passed?'superado':'fallido'}. El árbol muestra bloques construidos; no todos fueron aceptados por los nodos.`;
+}
+
+$('benchmarkRun').onclick=async()=>{
+  const target=$('benchmarkOutput');target.textContent='Ejecutando tres escenarios…';
+  $('benchmarkRun').disabled=true;
+  try{
+    const response=await fetch('/api/benchmark?rounds=12&seed=42');
+    const data=await response.json();
+    if(!response.ok)throw Error(data.detail||`HTTP ${response.status}`);
+    target.replaceChildren();
+    const table=el('table','');table.style.cssText='width:100%;border-collapse:collapse;text-align:left';
+    const head=el('tr','');
+    ['Desconectados','QC / rondas','Altura confirmada máxima','Safety observada'].forEach(x=>{const th=el('th','',x);th.style.padding='9px';head.append(th);});
+    table.append(head);
+    for(const item of data.scenarios){
+      const tr=el('tr','');
+      [item.offline_count,`${item.qc_rounds} / ${item.rounds}`,item.max_committed_height,item.safety.safe?'Sin conflictos':'Conflicto detectado'].forEach(x=>{const td=el('td','',x);td.style.cssText='padding:9px;border-top:1px solid #324764';tr.append(td);});
+      table.append(tr);
+      const bar=el('div','');bar.style.cssText='height:8px;background:#263750;border-radius:5px;margin:8px 0';
+      const fill=el('div','');fill.style.cssText=`height:100%;width:${item.qc_rate*100}%;background:#61dfa7;border-radius:5px`;bar.append(fill);
+      const detail=el('div','muted',`${item.offline_count} desconectados · QC en ${Math.round(item.qc_rate*100)}% de rondas`);
+      // Keep the numerical comparison accessible independently of the bar.
+      target.append(detail,bar);
+    }
+    target.prepend(table);
+    target.append(el('p','muted',data.limitations));
+  }catch(error){target.textContent='Error: '+error.message;}
+  finally{$('benchmarkRun').disabled=false;}
+};
 </script>
 </body>
 </html>

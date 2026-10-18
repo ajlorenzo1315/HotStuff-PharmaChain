@@ -172,3 +172,14 @@ def safety_equivocation():
         return run_fork_experiment()
     except RuntimeError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.get("/api/benchmark")
+def benchmark(rounds: int = 12, seed: int = 42):
+    """Isolated fail-stop comparison; does not change the dashboard's main sim."""
+    from pharmachain.api.benchmark import run_benchmark
+
+    try:
+        return run_benchmark(rounds=rounds, seed=seed)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
