@@ -16,6 +16,7 @@ from pharmachain.consensus.messages import (
     QuorumCertificate,
     Vote,
 )
+from pharmachain.consensus.new_view import NewView, NewViewCollector
 from pharmachain.consensus.node import HotStuffNode
 from pharmachain.consensus.validator import Validator
 from pharmachain.consensus.view_change import SignedTimeout, TimeoutCertificate
@@ -56,6 +57,7 @@ class NodeRuntime:
     formed_qcs: set[tuple[int, str]] = field(default_factory=set)
     timeouts: dict[int, dict[str, SignedTimeout]] = field(default_factory=dict)
     formed_tcs: set[int] = field(default_factory=set)
+    new_views: dict[int, NewViewCollector] = field(default_factory=dict)
 
 
 class DistributedHotStuff:
@@ -133,6 +135,8 @@ class DistributedHotStuff:
             self._on_timeout(recipient, msg)
         elif msg.kind == "TC":
             self._on_tc(recipient, msg)
+        elif msg.kind == "NEW_VIEW":
+            self._on_new_view(recipient, msg)
 
     def _on_proposal(
         self,
@@ -440,6 +444,54 @@ class DistributedHotStuff:
             return
         node.view = tc.view + 1
         self._record("VIEW_CHANGED", node=recipient, view=node.view, reason="TC")
+        self._send_new_view(recipient, node.view)
+
+    def _send_new_view(self, sender: str, view: int) -> None:
+        """Send authenticated highQC to the designated leader of the view."""
+        node = self.nodes[sender].node
+        message = NewView.create(
+            validator_id=sender,
+            private_key=node.validator.private_key,
+            view=view,
+            high_qc=node.high_qc,
+        )
+        self._record("NEW_VIEW_SENT", node=sender, view=view)
+        self.network.send(sender, self.leader_id(view), "NEW_VIEW", message)
+
+    def _on_new_view(self, recipient: str, msg: Envelope) -> None:
+        message = msg.payload
+        if not isinstance(message, NewView):
+            return
+        if recipient != self.leader_id(message.view):
+            return
+        if msg.sender != message.validator_id:
+            self._record("NEW_VIEW_REJECTED", node=recipient, reason="sender_mismatch")
+            return
+        runtime = self.nodes[recipient]
+        collector = runtime.new_views.setdefault(
+            message.view,
+            NewViewCollector(message.view, self.public_keys, self.quorum),
+        )
+        if not collector.add(message):
+            self._record(
+                "NEW_VIEW_REJECTED", node=recipient, reason="invalid_or_duplicate"
+            )
+            return
+        self._record(
+            "NEW_VIEW_ACCEPTED",
+            node=recipient,
+            view=message.view,
+            count=len(collector.messages),
+        )
+        if collector.ready:
+            selected = collector.highest_qc()
+            self._record(
+                "NEW_VIEW_QUORUM",
+                node=recipient,
+                view=message.view,
+                high_qc_view=selected.view if selected else None,
+                high_qc_hash=selected.block_hash if selected else self.genesis_hash,
+            )
 
     def trigger_timeouts(self, view: int) -> None:
         """Educational timeout trigger; network transports signed notices."""
@@ -461,7 +513,44 @@ class DistributedHotStuff:
 
         block_hash = None
 
-        if leader_id not in self.network.offline:
+        if leader_id not in self.network.offline and leader.view == current_view:
+            collector = self.nodes[leader_id].new_views.get(current_view)
+            # In recovery views, wait for authenticated NEW_VIEW quorum.
+            # If the parent is missing, stop rather than propose an unsafe block.
+            if collector is not None and not collector.ready:
+                self._record("WAIT_NEW_VIEW_QUORUM", node=leader_id, view=current_view)
+                return RoundResult(
+                    current_view,
+                    leader_id,
+                    None,
+                    0,
+                    False,
+                    {nid: rt.node.committed_height for nid, rt in self.nodes.items()},
+                )
+            if collector is not None and collector.ready:
+                selected = collector.highest_qc()
+                if selected is not None and (
+                    leader.high_qc is None or selected.view > leader.high_qc.view
+                ):
+                    if selected.block_hash not in leader.blockchain.blocks:
+                        self._record(
+                            "SYNC_REQUIRED",
+                            node=leader_id,
+                            view=current_view,
+                            block=selected.block_hash,
+                        )
+                        return RoundResult(
+                            current_view,
+                            leader_id,
+                            None,
+                            0,
+                            False,
+                            {
+                                nid: rt.node.committed_height
+                                for nid, rt in self.nodes.items()
+                            },
+                        )
+                    leader.receive_qc(selected)
             parent_hash = (
                 leader.high_qc.block_hash
                 if leader.high_qc is not None
@@ -521,6 +610,8 @@ class DistributedHotStuff:
                     block_hash in runtime.node.certificates
                 ):
                     runtime.node.view = max(runtime.node.view, current_view + 1)
+                    self._send_new_view(node_id, runtime.node.view)
+            self.network.run()
             self.view += 1
         else:
             # The next leader gathers signed timeouts and broadcasts a TC.
