@@ -18,6 +18,7 @@ from pharmachain.consensus.messages import (
 )
 from pharmachain.consensus.node import HotStuffNode
 from pharmachain.consensus.validator import Validator
+from pharmachain.consensus.view_change import SignedTimeout, TimeoutCertificate
 from pharmachain.domain.state import LedgerState
 from pharmachain.simulation.network import (
     Envelope,
@@ -53,6 +54,8 @@ class NodeRuntime:
     proposed: dict[int, str] = field(default_factory=dict)
 
     formed_qcs: set[tuple[int, str]] = field(default_factory=set)
+    timeouts: dict[int, dict[str, SignedTimeout]] = field(default_factory=dict)
+    formed_tcs: set[int] = field(default_factory=set)
 
 
 class DistributedHotStuff:
@@ -126,6 +129,10 @@ class DistributedHotStuff:
             self._on_vote(recipient, msg)
         elif msg.kind == "QC":
             self._on_qc(recipient, msg)
+        elif msg.kind == "TIMEOUT":
+            self._on_timeout(recipient, msg)
+        elif msg.kind == "TC":
+            self._on_tc(recipient, msg)
 
     def _on_proposal(
         self,
@@ -394,6 +401,59 @@ class DistributedHotStuff:
             height=chain.committed_height,
         )
 
+    def _on_timeout(self, recipient: str, msg: Envelope) -> None:
+        notice = msg.payload
+        if not isinstance(notice, SignedTimeout):
+            return
+        if msg.sender != notice.validator_id or not notice.verify(self.public_keys):
+            self._record("INVALID_TIMEOUT", node=recipient, sender=msg.sender)
+            return
+        if recipient != self.leader_id(notice.view + 1):
+            return
+        runtime = self.nodes[recipient]
+        if notice.view in runtime.formed_tcs:
+            return
+        collected = runtime.timeouts.setdefault(notice.view, {})
+        collected[notice.validator_id] = notice
+        if len(collected) < self.quorum:
+            return
+        tc = TimeoutCertificate(notice.view, tuple(collected.values()))
+        if not tc.verify(self.public_keys, self.quorum):
+            return
+        runtime.formed_tcs.add(notice.view)
+        self._record(
+            "TC_FORMED", node=recipient, view=notice.view, signers=sorted(collected)
+        )
+        self.network.broadcast(recipient, "TC", tc, include_sender=True)
+
+    def _on_tc(self, recipient: str, msg: Envelope) -> None:
+        tc = msg.payload
+        if not isinstance(tc, TimeoutCertificate):
+            return
+        if msg.sender != self.leader_id(tc.view + 1):
+            return
+        if not tc.verify(self.public_keys, self.quorum):
+            self._record("INVALID_TC", node=recipient, view=tc.view)
+            return
+        node = self.nodes[recipient].node
+        if tc.view + 1 <= node.view:
+            return
+        node.view = tc.view + 1
+        self._record("VIEW_CHANGED", node=recipient, view=node.view, reason="TC")
+
+    def trigger_timeouts(self, view: int) -> None:
+        """Educational timeout trigger; network transports signed notices."""
+        next_leader = self.leader_id(view + 1)
+        for node_id, runtime in self.nodes.items():
+            if node_id in self.network.offline or runtime.node.view != view:
+                continue
+            notice = SignedTimeout.create(
+                node_id, runtime.node.validator.private_key, view
+            )
+            self._record("TIMEOUT_SENT", node=node_id, view=view)
+            self.network.send(node_id, next_leader, "TIMEOUT", notice)
+        self.network.run()
+
     def run_round(self) -> RoundResult:
         current_view = self.view
         leader_id = self.leader_id(current_view)
@@ -453,12 +513,20 @@ class DistributedHotStuff:
                 for event in self.events
             )
 
-        # Avance simplificado de vistas.
-        # En la fase 4 se sustituirá por el pacemaker.
-        for runtime in self.nodes.values():
-            runtime.node.view = current_view + 1
-
-        self.view += 1
+        if qc_formed:
+            # A successful round advances only online nodes that received
+            # the certificate; disconnected nodes retain their local view.
+            for node_id, runtime in self.nodes.items():
+                if node_id not in self.network.offline and (
+                    block_hash in runtime.node.certificates
+                ):
+                    runtime.node.view = max(runtime.node.view, current_view + 1)
+            self.view += 1
+        else:
+            # The next leader gathers signed timeouts and broadcasts a TC.
+            self.trigger_timeouts(current_view)
+            if self.nodes[self.leader_id(current_view + 1)].node.view > current_view:
+                self.view += 1
 
         return RoundResult(
             view=current_view,
