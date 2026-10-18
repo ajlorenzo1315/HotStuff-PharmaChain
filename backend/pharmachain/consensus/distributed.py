@@ -80,8 +80,12 @@ class DistributedHotStuff:
         if validator_count < 4:
             raise ValueError("At least four validators required")
 
-        # El valor 2f+1 sigue siendo correcto cuando n=3f+1
-        self.quorum = validator_count - self.f
+        if (validator_count - 1) % 3 != 0:
+            raise ValueError("Validator count must satisfy n = 3f + 1")
+
+        # Chained HotStuff: n = 3f + 1, quorum = 2f + 1.
+        self.f = (validator_count - 1) // 3
+        self.quorum = 2 * self.f + 1
 
         self.view = 1
 
