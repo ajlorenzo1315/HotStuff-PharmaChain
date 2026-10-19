@@ -277,21 +277,10 @@ source .venv/bin/activate
 python -m pip install -e ".[dev]"
 ```
 
-En PowerShell, activa el entorno con
-`.venv\Scripts\Activate.ps1`.
-
-### API de lotes
-
-```bash
-python -m uvicorn pharmachain.api.main:app --reload --port 8001
-```
-
-Documentación interactiva: <http://127.0.0.1:8001/docs>.
-
 ### Dashboard del consenso
 
 ```bash
-python -m uvicorn pharmachain.api.dashboard:app --reload --port 8002
+python -m uvicorn pharmachain.api.dashboard:app --reload --port 8001
 ```
 
 Panel: <http://127.0.0.1:8002/>.
