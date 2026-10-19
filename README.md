@@ -15,6 +15,14 @@ una API FastAPI y paneles de demostración.
 > describen el protocolo y su modelo; no prueban por sí solas que todas las
 > garantías de un despliegue BFT de producción estén implementadas.
 
+## 📊 Presentación del proyecto
+
+Consulta la presentación académica de HotStuff-PharmaChain,
+donde se explica el funcionamiento del consenso HotStuff,
+Chained HotStuff, los ataques bizantinos y los casos reales.
+
+📄 [Ver presentación en PDF](docs/tarea1_IagoOtero_AliciaJiaJun_Vigo_HotStuff.pdf)
+
 ## Índice
 
 1. [El problema](#1-el-problema)
