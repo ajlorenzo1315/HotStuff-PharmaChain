@@ -60,9 +60,7 @@ def _snapshot(sim: DistributedHotStuff) -> dict:
                 "blocks": len(node.blockchain.blocks),
                 "certificates": len(node.certificates),
                 "recovering": runtime.recovering,
-                "public_key": (
-                    runtime.node.validator.public_key.hex() if isinstance(runtime.node.validator.public_key, bytes) else str(runtime.node.validator.public_key)
-                ),
+                "public_key": (runtime.node.validator.public_key.hex() if isinstance(runtime.node.validator.public_key, bytes) else str(runtime.node.validator.public_key)),
             }
         )
     return {
@@ -74,29 +72,14 @@ def _snapshot(sim: DistributedHotStuff) -> dict:
         "event_count": len(sim.events),
         "simulation_mode": "distributed-pharmaceutical-transactions",
         "pharmaceutical_transactions_enabled": True,
-        "pending_transactions": [
-            {"tx_id": tx.tx_id, "batch_id": tx.batch_id, "type": tx.tx_type.value, "sender": tx.sender_id, "receiver": tx.receiver_id}
-            for tx in sim.pending_transactions
-        ],
-        "custody_by_node": {
-            node_id: {batch_id: batch.custodian_id for batch_id, batch in runtime.node.blockchain.committed_state.batches.items()}
-            for node_id, runtime in sim.nodes.items()
-        },
+        "pending_transactions": [{"tx_id": tx.tx_id, "batch_id": tx.batch_id, "type": tx.tx_type.value, "sender": tx.sender_id, "receiver": tx.receiver_id} for tx in sim.pending_transactions],
+        "custody_by_node": {node_id: {batch_id: batch.custodian_id for batch_id, batch in runtime.node.blockchain.committed_state.batches.items()} for node_id, runtime in sim.nodes.items()},
     }
 
 
 @app.get("/")
 def home():
     return FileResponse(_STATIC)
-
-
-@app.get("/api/education/attack-walkthrough")
-def guided_attack_walkthrough():
-    """Standalone introductory Basic HotStuff demo; never mutates the ledger."""
-    path = _STATIC.parent / "demo_hotstuff_ataques.html"
-    if not path.is_file():
-        raise HTTPException(status_code=404, detail="Introducción no instalada")
-    return FileResponse(path, media_type="text/html")
 
 
 @app.get("/api/simulation")
@@ -369,3 +352,21 @@ def consensus_guide():
 
 
 app.include_router(visual_router)
+
+
+@app.get("/api/education/attack-walkthrough", include_in_schema=False)
+def guided_attack_walkthrough():
+    """Basic HotStuff: standalone educational simulation."""
+    path = _STATIC.parent / "demo_hotstuff_ataques.html"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Introducción no instalada")
+    return FileResponse(path, media_type="text/html")
+
+
+@app.get("/api/education/pharma-lab", include_in_schema=False)
+def pharma_lab_page():
+    """Chained HotStuff: standalone educational laboratory."""
+    path = _STATIC.parent / "pharma_lab.html"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Laboratorio no instalado")
+    return FileResponse(path, media_type="text/html")

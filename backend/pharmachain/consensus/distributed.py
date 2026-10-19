@@ -28,6 +28,7 @@ from pharmachain.consensus.sync import (
 from pharmachain.consensus.validator import Validator
 from pharmachain.consensus.view_change import SignedTimeout, TimeoutCertificate
 from pharmachain.domain.state import LedgerState
+from pharmachain.domain.transactions import Transaction
 from pharmachain.simulation.network import (
     Envelope,
     SimulatedNetwork,
@@ -100,6 +101,10 @@ class DistributedHotStuff:
 
         self.nodes: dict[str, NodeRuntime] = {}
         self.events: list[dict] = []
+        # Transactions are proposed once and only removed after a real commit.
+        self.pending_transactions: list[Transaction] = []
+        # Proposal membership is derived from the selected parent chain.
+        # A global proposed flag would strand transactions after failed views.
 
         for validator in validators:
             node = HotStuffNode.create(
@@ -118,20 +123,53 @@ class DistributedHotStuff:
 
         self.genesis_hash = next(iter(self.nodes.values())).node.blockchain.genesis.block_hash
 
+    def _node_snapshot(self) -> dict[str, dict]:
+        """Observable state at this exact trace step, not the latest API state."""
+        return {
+            node_id: {
+                "view": runtime.node.view,
+                "height": runtime.node.committed_height,
+                "certificates": len(runtime.node.certificates),
+                "online": node_id not in self.network.offline,
+            }
+            for node_id, runtime in self.nodes.items()
+        }
+
     def _record(self, event: str, **details) -> None:
         self.events.append(
             {
+                "seq": len(self.events) + 1,
                 "time": self.network.time,
                 "event": event,
                 **details,
+                "node_states": self._node_snapshot(),
             }
         )
+
+    def submit_transaction(self, tx: Transaction) -> None:
+        """Queue a signed transaction; do not change confirmed state."""
+        if self.pending_transactions:
+            raise ValueError("Finish the previous pending transaction first")
+        # All validators share the same genesis state in this controlled demo.
+        # Validate against confirmed state, without mutating it.
+        state = next(iter(self.nodes.values())).node.blockchain.committed_state
+        state.apply(tx)
+        self.pending_transactions.append(tx)
+        self._record("TX_PENDING", tx_id=tx.tx_id, batch_id=tx.batch_id, sender=tx.sender_id, receiver=tx.receiver_id, tx_type=tx.tx_type.value)
 
     def leader_id(self, view: int) -> str:
         index = (view - 1) % len(self.nodes)
         return f"validator-{index}"
 
     def _receive(self, recipient: str, msg: Envelope) -> None:
+        # Only count delivery when the network actually invokes the receiver.
+        # This is distinct from an accepted vote or a verified signature.
+        self._record(
+            "MESSAGE_RECEIVED",
+            source=msg.sender,
+            target=recipient,
+            kind=msg.kind,
+        )
         if msg.kind == "PROPOSE":
             self._on_proposal(recipient, msg)
         elif msg.kind == "VOTE":
@@ -398,6 +436,7 @@ class DistributedHotStuff:
         if chain.is_committed(b1.block_hash):
             return
 
+        previous_custodians = {batch_id: batch.custodian_id for batch_id, batch in chain.committed_state.batches.items()}
         try:
             committed = chain.commit(b1.block_hash)
         except Exception as exc:
@@ -415,6 +454,26 @@ class DistributedHotStuff:
             blocks=committed,
             height=chain.committed_height,
         )
+        # Only compare actual committed ledger state, never proposed state.
+        current_state = chain.committed_state
+        for block_hash in committed:
+            committed_block = chain.blocks[block_hash]
+            for tx in committed_block.transactions:
+                before = previous_custodians.get(tx.batch_id)
+                batch = current_state.batches.get(tx.batch_id)
+                after = batch.custodian_id if batch else None
+                self._record(
+                    "TX_COMMITTED",
+                    node=node.node_id,
+                    block=block_hash,
+                    tx_id=tx.tx_id,
+                    batch_id=tx.batch_id,
+                    previous_custodian=before,
+                    new_custodian=after,
+                    height=chain.committed_height,
+                )
+                previous_custodians[tx.batch_id] = after
+                self.pending_transactions = [item for item in self.pending_transactions if item.tx_id != tx.tx_id]
 
     def _on_timeout(self, recipient: str, msg: Envelope) -> None:
         notice = msg.payload
@@ -464,8 +523,15 @@ class DistributedHotStuff:
             view=view,
             high_qc=node.high_qc,
         )
-        self._record("NEW_VIEW_SENT", node=sender, view=view)
-        self.network.send(sender, self.leader_id(view), "NEW_VIEW", message)
+        recipient = self.leader_id(view)
+        self._record(
+            "NEW_VIEW_SENT",
+            node=sender,
+            source=sender,
+            target=recipient,
+            view=view,
+        )
+        self.network.send(sender, recipient, "NEW_VIEW", message)
 
     def _on_new_view(self, recipient: str, msg: Envelope) -> None:
         message = msg.payload
@@ -505,7 +571,7 @@ class DistributedHotStuff:
         if recipient == source or recipient not in self.nodes or source not in self.nodes:
             return
         runtime = self.nodes[recipient]
-        if target_hash in runtime.node.blockchain.blocks:
+        if target_hash in runtime.node.blockchain.blocks and target_hash in runtime.node.certificates:
             return
         runtime.pending_sync[target_hash] = source
         self._record("BLOCK_REQUESTED", node=recipient, peer=source, block=target_hash)
@@ -621,7 +687,10 @@ class DistributedHotStuff:
         # Peer is only a source of candidate data, never an authority to commit.
         peer_id = max(
             peers,
-            key=lambda peer: (self.nodes[peer].node.high_qc.view if self.nodes[peer].node.high_qc is not None else 0),
+            key=lambda peer: (
+                self.nodes[peer].node.committed_height,
+                self.nodes[peer].node.high_qc.view if self.nodes[peer].node.high_qc is not None else 0,
+            ),
         )
         peer_node = self.nodes[peer_id].node
         qc = peer_node.high_qc
@@ -629,13 +698,15 @@ class DistributedHotStuff:
             self._record("RECOVERY_WAITING", node=node_id, reason="no_qc")
             return False
         runtime = self.nodes[node_id]
-        if qc.block_hash in runtime.node.blockchain.blocks:
-            self._record("RECOVERY_WAITING", node=node_id, reason="blocks_present")
-            return False
+        if qc.block_hash in runtime.node.certificates and runtime.node.committed_height >= peer_node.committed_height:
+            self._record("RECOVERY_UP_TO_DATE", node=node_id, height=runtime.node.committed_height)
+            return True
         runtime.recovering = True
         self._record("RECOVERY_STARTED", node=node_id, peer=peer_id, block=qc.block_hash)
         self.request_sync(node_id, peer_id, qc.block_hash)
         self.network.run()
+        if runtime.recovering:
+            self._record("RECOVERY_WAITING", node=node_id, reason="sync_incomplete")
         return not runtime.recovering
 
     def trigger_timeouts(self, view: int) -> None:
@@ -649,7 +720,33 @@ class DistributedHotStuff:
             self.network.send(node_id, next_leader, "TIMEOUT", notice)
         self.network.run()
 
+    def _ancestor_transaction_ids(self, leader_id: str, parent_hash: str) -> set[str]:
+        """Transactions already present on the ancestry selected by the leader.
+
+        A transaction proposed on a failed fork must be eligible for reproposal;
+        a transaction on the certified parent chain must not be inserted twice.
+        """
+        chain = self.nodes[leader_id].node.blockchain
+        seen_blocks: set[str] = set()
+        included: set[str] = set()
+        cursor = parent_hash
+        while cursor in chain.blocks and cursor not in seen_blocks:
+            seen_blocks.add(cursor)
+            block = chain.blocks[cursor]
+            included.update(tx.tx_id for tx in block.transactions)
+            cursor = block.parent_hash
+        return included
+
     def run_round(self) -> RoundResult:
+        # Opportunistic catch-up: an online stale replica must not stall the 2f+1 quorum.
+        # A disconnected node is never used as a source; verified QC/blocks are requested.
+        online = [nid for nid in self.nodes if nid not in self.network.offline]
+        if len(online) >= self.quorum:
+            best_height = max(self.nodes[nid].node.committed_height for nid in online)
+            for nid in online:
+                runtime = self.nodes[nid]
+                if runtime.node.committed_height < best_height and not runtime.recovering:
+                    self.reconnect_and_sync(nid)
         current_view = self.view
         leader_id = self.leader_id(current_view)
         leader = self.nodes[leader_id].node
@@ -680,11 +777,7 @@ class DistributedHotStuff:
                             view=current_view,
                             block=selected.block_hash,
                         )
-                        sources = [
-                            m.validator_id
-                            for m in collector.messages.values()
-                            if m.high_qc is not None and m.high_qc.block_hash == selected.block_hash
-                        ]
+                        sources = [m.validator_id for m in collector.messages.values() if m.high_qc is not None and m.high_qc.block_hash == selected.block_hash]
                         if sources:
                             self.request_sync(leader_id, sources[0], selected.block_hash)
                             self.network.run()
@@ -702,11 +795,13 @@ class DistributedHotStuff:
             # Si el líder desconoce el bloque padre,
             # no puede construir una propuesta válida.
             if parent_hash in leader.blockchain.blocks:
+                included_in_parent = self._ancestor_transaction_ids(leader_id, parent_hash)
+                to_propose = [tx for tx in self.pending_transactions if tx.tx_id not in included_in_parent]
                 block = leader.blockchain.create_block(
                     parent_hash=parent_hash,
                     view=current_view,
                     proposer_id=leader_id,
-                    transactions=[],
+                    transactions=to_propose,
                 )
 
                 block_hash = block.block_hash
@@ -718,6 +813,7 @@ class DistributedHotStuff:
                     node=leader_id,
                     view=current_view,
                     block=block_hash,
+                    tx_ids=[tx.tx_id for tx in to_propose],
                 )
 
                 self.network.broadcast(

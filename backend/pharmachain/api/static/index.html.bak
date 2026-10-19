@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PharmaChain · HotStuff Lab</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,Arial,sans-serif;background:#0b1220;color:#e7edf8}*{box-sizing:border-box}body{max-width:1180px;margin:auto;padding:26px}h1{font-size:28px;margin:0 0 8px}.sub{color:#a4b2c8;margin:0 0 26px}.toolbar{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}button{background:#243b5d;color:white;border:1px solid #426188;border-radius:9px;padding:10px 14px;cursor:pointer}button:hover{background:#35547d}button:disabled{opacity:.5;cursor:wait}.primary{background:#156eaa}.layout{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.node,.panel{background:#151f30;border:1px solid #2b3d58;border-radius:14px;padding:18px}.node h3{margin:0 0 10px}.muted{color:#a4b2c8;font-size:13px}.online{color:#61dfa7}.offline{color:#ff8d8d}.stats{display:flex;gap:25px;flex-wrap:wrap;margin:18px 0}.stat strong{display:block;font-size:22px}.panel{margin-top:18px}#events{max-height:350px;overflow:auto;font-family:ui-monospace,monospace;font-size:12px}.event{padding:8px;border-bottom:1px solid #29394f;overflow-wrap:anywhere}#error{color:#ff9c9c;min-height:22px}small{color:#a4b2c8}@media(max-width:760px){.layout{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:420px){.layout{grid-template-columns:1fr}}
+#forkGraph{margin-top:14px;border:1px solid #324764;border-radius:12px;padding:14px;background:#0d1728}
+#forkGraph svg{width:100%;height:auto;display:block}
+#forkVotes{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px;margin-top:12px}
+.voteBox{padding:12px;border:1px solid #3b526e;border-radius:10px;background:#19263b}
+.voteBox strong{display:block;margin-bottom:5px}
+#forkSummary{margin-top:10px;font-size:14px;line-height:1.5}
+#byzantineLab select,#byzantineLab input{background:#243b5d;color:#fff;border:1px solid #426188;border-radius:8px;padding:9px;max-width:130px}
+#byzantineLab label{align-self:center;font-size:13px}
+.byz-track{height:13px;background:#2b3d58;border-radius:8px;overflow:hidden;flex:1}
+.byz-fill{height:100%;background:#60d8ad}
+.byz-line{display:flex;gap:12px;align-items:center;margin:12px 0}
+.byz-line span{min-width:150px;font-size:13px}
+#byzTable{overflow-x:auto}
+#byzTable table{border-collapse:collapse;width:100%;font-size:13px}
+#byzTable th,#byzTable td{padding:10px;border-bottom:1px solid #344760;text-align:left}
+#byzRoundsDetail details{margin:12px 0}
+#byzRoundsDetail pre{max-height:230px;overflow:auto;font-size:12px}
+
+
+:root{--bg:#08111f;--surface:#111e30;--stroke:#2a405b;--teal:#4fe2c3;--blue:#75a9ff;--amber:#ffc978;--red:#ff8195}
+html{scroll-behavior:smooth}body{max-width:1440px;padding:22px 28px 80px;background:radial-gradient(circle at 85% -5%,#153657 0,transparent 38%),var(--bg);line-height:1.5}
+h1{font-size:clamp(27px,3vw,42px);letter-spacing:-.04em}h2{letter-spacing:-.025em;margin:0 0 10px}h3{margin:12px 0}
+.panel,.node{background:linear-gradient(155deg,#14243a,#0f1b2c);box-shadow:0 8px 28px #0002;border-color:var(--stroke)}
+.panel{padding:24px}.sub{font-size:15px}.primary{background:linear-gradient(115deg,#146d9c,#157f83);border-color:#2fa7aa}
+button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.nav{position:sticky;top:0;z-index:5;background:#0b1727ef;backdrop-filter:blur(14px);display:flex;flex-wrap:wrap;gap:7px;padding:12px;border:1px solid var(--stroke);border-radius:14px;margin-bottom:20px}
+.nav a{color:#c4d7f4;text-decoration:none;padding:7px 12px;border-radius:8px;font-size:13px}.nav a:hover{background:#213a56;color:white}
+.hero{display:grid;grid-template-columns:1.4fr .7fr;gap:18px;align-items:center;margin:14px 0 24px}.eyebrow{color:var(--teal);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.14em}.hero-aside{border:1px solid #356378;background:#102b3c;border-radius:15px;padding:17px}.hero-aside strong{font-size:28px;color:var(--teal)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.stat{padding:17px;border:1px solid var(--stroke);border-radius:14px;background:#12243a}.stat strong{font-size:25px;color:#f5fbff;overflow-wrap:anywhere}.stat small{display:block;margin-bottom:8px}
+.section-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.pill{font-size:11px;font-weight:700;border:1px solid #3a5775;border-radius:99px;padding:4px 10px;color:#a9cbe9}.guide-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.guide-step{padding:14px;border:1px solid var(--stroke);border-radius:12px;background:#101f32}.guide-step b{color:var(--teal);display:block;font-size:14px}.guide-step p{font-size:12px;color:#aebfd5;margin-bottom:0}
+.topology-grid{display:grid;grid-template-columns:1.35fr .65fr;gap:16px}.topology-graphic{background:#0a1828;border:1px solid var(--stroke);border-radius:14px;min-height:310px}.topology-graphic svg{display:block;width:100%;height:auto}.topology-side{display:flex;flex-direction:column;gap:10px}.legend-row{display:flex;align-items:center;gap:8px;font-size:13px}.dot{width:10px;height:10px;border-radius:50%;display:inline-block}.explain{border-left:3px solid var(--teal);padding:10px 13px;background:#10293a;border-radius:0 8px 8px 0;color:#c6d9ec;font-size:13px}
+.progress-track{height:12px;border-radius:99px;background:#293d54;overflow:hidden}.progress-fill{height:100%;background:linear-gradient(90deg,#168fba,#54e0b5);transition:width .35s}.metric-pair{display:flex;justify-content:space-between;font-size:13px;margin-bottom:7px}.node{position:relative;overflow:hidden}.node:before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:#4fe2c3}.node:has(.offline):before{background:var(--red)}.node h3{font-size:15px}
+#events{max-height:420px}.event{font-size:12px;border-left:3px solid #415d80;margin:4px 0;padding:9px 12px;background:#0c1a2c;border-radius:4px}.event[data-kind="QC"],.event[data-kind="COMMIT"]{border-left-color:var(--teal)}.event[data-kind="REJECT"],.event[data-kind="INVALID"]{border-left-color:var(--red)}.event[data-kind="TIMEOUT"],.event[data-kind="TC"]{border-left-color:var(--amber)}
+.event-filter{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.event-filter select,.event-filter input{background:#0c1a2c;color:#fff;border:1px solid var(--stroke);border-radius:8px;padding:10px}
+#byzChart{display:grid;gap:10px;margin:18px 0}.byz-line{background:#0b1c2e;border:1px solid #2c425e;border-radius:12px;padding:14px;margin:0;display:grid;grid-template-columns:180px 1fr 75px;gap:14px}.byz-line span{min-width:0}.byz-track{height:17px}.byz-line strong{text-align:right;font-size:14px}
+#byzTable table{min-width:680px}.panel table{border-collapse:collapse;width:100%}.panel th{color:#a9c8e9;font-size:12px;text-align:left}.panel td,.panel th{padding:11px;border-bottom:1px solid #30445d}
+.attack-model{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}.attack-node{padding:13px;text-align:center;border:1px solid #31526a;border-radius:12px;background:#0c2132}.attack-node strong{display:block;font-size:15px}.attack-node small{display:block;margin-top:5px}.attack-node.bad{border-color:#99596c;background:#381f30}.attack-node.good{border-color:#3c8e80}
+#byzInsight{margin:12px 0}.callout{border:1px solid #3d5674;border-radius:12px;padding:13px;background:#102238;font-size:13px}
+.timeline{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.timeline-item{width:29px;height:29px;border-radius:7px;display:grid;place-items:center;font-size:11px;font-weight:700;background:#26405e;color:#cfe3f6}.timeline-item.ok{background:#155e52;color:#c4fff0}.timeline-item.fail{background:#55303e;color:#ffd4de}
+#forkTree{max-height:420px}.muted{line-height:1.55}a{color:#85d8ef}
+@media(max-width:950px){.hero,.topology-grid{grid-template-columns:1fr}.guide-grid{grid-template-columns:repeat(2,1fr)}.stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){body{padding:12px}.panel{padding:15px}.guide-grid,.attack-model{grid-template-columns:repeat(2,1fr)}.byz-line{grid-template-columns:1fr 50px}.byz-line .byz-track{grid-column:1/-1;grid-row:2}.stats{gap:8px}.stat{padding:11px}.nav{position:static}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+
+/* Unified, aligned evaluation layout */
+#visualLab .vl-grid{grid-template-columns:minmax(0,1fr)!important;gap:16px}
+#visualLab .vl-playback-layout{grid-template-columns:minmax(0,1.3fr) minmax(310px,.8fr)!important;align-items:stretch;gap:16px}
+#visualLab .vl-playback-layout>svg{width:100%;height:auto;max-height:420px;align-self:center;background:#091a2b;border:1px solid #2f4b62;border-radius:12px}
+#visualLab .vl-side{min-width:0;overflow-wrap:anywhere}
+#visualLab .vl-box{min-width:0;overflow:hidden}
+#visualLab .vl-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+#visualLab .vl-integrated-benchmark{margin:20px 0;padding:18px;background:#0d2031;border:1px solid #3b5770;border-radius:14px}
+#visualLab .vl-integrated-benchmark h3{margin-top:0}
+#visualLab #byzChart,#visualLab #byzTable,#visualLab #byzRoundsDetail{overflow-x:auto;max-width:100%}
+#visualLab .vl-playback-layout .vl-side>h4{margin:12px 0 6px}
+#safetyJsonDetails{margin-top:12px}#safetyJsonDetails pre{max-height:340px;overflow:auto}
+#forkGraph{display:block;overflow:hidden}#forkGraph[hidden]{display:none}
+#forkTree{max-height:450px;min-height:250px}
+@media(max-width:960px){#visualLab .vl-playback-layout{grid-template-columns:1fr!important}}
+.intro-link{display:inline-block;padding:12px 18px;background:#31bba8;color:#082331!important;border-radius:10px;font-weight:800;text-decoration:none;margin:8px 0}.cu-buttons button{min-width:145px}#cuResetAll{border:1px solid #ffab75!important}#cuContinue{border:1px solid #5be1d1!important}</style>
+<style>#custodyDemo .custody-forms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}#custodyDemo form{display:flex;flex-direction:column;gap:12px;padding:16px;background:#0d2134;border:1px solid #36536d;border-radius:12px}#custodyDemo form label{display:flex;flex-direction:column;gap:4px}#custodyDemo input,#custodyDemo select{min-width:0;padding:9px;border-radius:7px;border:1px solid #45617c;background:#152c41;color:#fff}#custodyDemo .custody-actions{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:16px 0}#custodyDemo #custodyTable{overflow:auto}#custodyDemo table{width:100%;border-collapse:collapse}#custodyDemo th,#custodyDemo td{padding:12px;border-bottom:1px solid #3d5770;text-align:left}#custodyDemo .custody-events{max-height:250px;overflow:auto;font-size:13px;line-height:1.8}#custodyDemo .custody-events>div{border-bottom:1px solid #2f4a63}@media(max-width:750px){#custodyDemo .custody-forms{grid-template-columns:1fr}}</style><style>
+#custodyVisual{margin:18px 0 20px;border:1px solid #315a7b;border-radius:16px;padding:18px;background:linear-gradient(135deg,#0c2138,#102e43);color:#e9f4ff}#custodyVisual *{box-sizing:border-box}#custodyVisual .cv-heading,#custodyVisual .cv-item-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}#custodyVisual h3{margin:0;font-size:20px}#custodyVisual p{margin:4px 0;color:#aac4d7;font-size:13px}#custodyVisual .cv-layout{display:grid;grid-template-columns:minmax(0,2fr) minmax(250px,1fr);gap:14px;margin-top:16px}#custodyVisual .cv-main{display:grid;gap:12px}#custodyVisual .cv-item,#custodyVisual .cv-side{background:#0b1b2d;border:1px solid #31506b;border-radius:13px;padding:15px}#custodyVisual .cv-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:13px 0}#custodyVisual .cv-step{position:relative;min-height:96px;background:#142c45;border:1px solid #31506b;border-radius:10px;padding:10px 8px;opacity:.72}#custodyVisual .cv-step strong{display:block;font-size:13px;margin-bottom:7px}#custodyVisual .cv-step small{font-size:11px;line-height:1.35;color:#b3c9dd;display:block}#custodyVisual .cv-step.active{opacity:1;border-color:#efab56;background:#473324}#custodyVisual .cv-step.done{opacity:1;border-color:#3fc6a5;background:#103e3c}#custodyVisual .cv-step.warn{opacity:1;border-color:#ff7e91;background:#482637}#custodyVisual .cv-note{font-size:13px;color:#d6e5f4}#custodyVisual .cv-tag{padding:5px 9px;border-radius:20px;font-size:12px;background:#29445d;color:#e1efff}#custodyVisual .cv-tag.good{background:#105a48;color:#abffe3}#custodyVisual .cv-tag.wait{background:#674923;color:#ffe3a4}#custodyVisual .cv-chain{display:grid;gap:8px;margin:15px 0}#custodyVisual .cv-chain-row{padding:10px;border-radius:9px;background:#193550;border-left:4px solid #5ac3f2;font-size:13px}#custodyVisual .cv-chain-row.current{border-left-color:#39e2a5;background:#12473d}#custodyVisual .cv-nodes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:10px}#custodyVisual .cv-node{padding:9px;background:#142e48;border-radius:9px;font-size:12px;overflow-wrap:anywhere}#custodyVisual .cv-node b{display:block;color:#c4e2f6}#custodyVisual .cv-quorum{font-size:13px;color:#f6d39a}#custodyVisual .cv-disclaimer{margin-top:12px!important;font-size:11px!important}#custodyVisual code{color:#c9e8f8} @media(max-width:850px){#custodyVisual .cv-layout{grid-template-columns:1fr}}@media(max-width:550px){#custodyVisual .cv-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style><style>
+#custodyDemo .custody-unified{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(290px,.85fr);gap:15px;margin-top:16px}#custodyDemo .cu-work{min-width:0;display:grid;gap:12px}#custodyDemo .cu-form,#custodyDemo .cu-progress,#custodyDemo .cu-consensus,#custodyDemo .cu-side{background:#0b2035;border:1px solid #365671;border-radius:14px;padding:16px}#custodyDemo .cu-form-title,#custodyDemo .cu-side-title,#custodyDemo .cu-progress-head,#custodyDemo .cu-consensus-title{display:flex;justify-content:space-between;align-items:center;gap:9px}#custodyDemo h3{margin:0 0 10px}#custodyDemo h4{margin:16px 0 8px}#custodyDemo .cu-form label{display:flex;flex-direction:column;gap:5px;font-size:13px;color:#c7e1f2;margin:9px 0}#custodyDemo input,#custodyDemo select{width:100%;background:#18334b;border:1px solid #486985;color:#fff;border-radius:8px;padding:10px}#custodyDemo .cu-fields,#custodyDemo .cu-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}#custodyDemo [hidden]{display:none!important}#custodyDemo .cu-attack{border:1px solid #49647c;border-radius:10px;margin:12px 0;padding:10px}#custodyDemo .cu-attack legend{font-weight:700}#custodyDemo .cu-attack small,#custodyDemo .cu-consensus small{font-size:11px;color:#9fbdd1}#custodyDemo .cu-targets{display:flex;flex-wrap:wrap;gap:10px}#custodyDemo .cu-targets label{display:flex;align-items:center;gap:4px;margin:0}#custodyDemo .cu-targets input{width:auto}#custodyDemo .cu-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}#custodyDemo button{border-radius:9px;padding:10px 12px}#custodyDemo .cu-badge{font-size:12px;border-radius:30px;background:#2b4760;padding:5px 10px;color:#d7ebfb}#custodyDemo .cu-bar{height:9px;background:#28435b;border-radius:20px;overflow:hidden;margin:12px 0}#custodyDemo #cuBarFill{height:100%;width:0%;background:#40c9ac;transition:width .3s}#custodyDemo .cu-phases{display:flex;justify-content:space-between;gap:5px;font-size:11px;color:#a9c4d7}#custodyDemo #cuMessage{font-size:13px;line-height:1.5}#custodyDemo .cu-mini-nodes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:12px 0}#custodyDemo .cu-mini-node{background:#19354e;border:1px solid #45627a;border-radius:9px;padding:9px 5px;text-align:center;font-size:11px;min-width:0}#custodyDemo .cu-mini-node strong{display:block;font-size:12px;overflow-wrap:anywhere}#custodyDemo .cu-mini-node.off{border-color:#ff7180;background:#482a38}#custodyDemo .cu-mini-node.leader{border-color:#f3ac5b}#custodyDemo .cu-custody{padding:10px;background:#102d40;border-radius:9px;font-size:13px;line-height:1.8}#custodyDemo .cu-history,#custodyDemo .cu-events{max-height:235px;overflow:auto;font-size:12px;line-height:1.55}#custodyDemo .cu-line{border-bottom:1px solid #294860;padding:7px 3px}#custodyDemo .cu-line b{color:#a6e5dc}#custodyDemo .cu-side{min-width:0}#custodyDemo .cu-side-title h3{margin:0}@media(max-width:900px){#custodyDemo .custody-unified{grid-template-columns:1fr}}@media(max-width:500px){#custodyDemo .cu-mini-nodes{grid-template-columns:repeat(2,1fr)}#custodyDemo .cu-fields,#custodyDemo .cu-controls{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="hero"><div><div class="eyebrow">Blockchain · Laboratorio interactivo de consenso</div><h1>⛓ PharmaChain <span style="color:var(--teal)">HotStuff</span></h1><p class="sub">Entiende cómo se proponen, votan y confirman bloques, y qué sucede cuando un validador falla o actúa maliciosamente.</p></div><aside class="hero-aside"><div class="eyebrow">Modelo de seguridad</div><strong>n = 3f + 1</strong><div>4 validadores · f = 1 · cuórum = 3</div><p class="muted">Los experimentos ilustran el comportamiento de esta implementación, no constituyen una prueba formal.</p></aside></div><nav class="nav" aria-label="Secciones"><a href="/api/education/attack-walkthrough">📖 Introducción interactiva</a><a href="/api/education/pharma-lab" target="_blank" rel="noopener noreferrer">🧪 Laboratorio Chained HotStuff</a><a href="#custodyDemo">💊 Demo farmacéutica</a><a href="#networkPanel">Red en directo</a><a href="#guidePanel">Cómo funciona</a><a href="#visualLab">Laboratorio bizantino</a><a href="#safetyPanel">Bifurcaciones</a><a href="#eventsPanel">Eventos</a></nav>
+<p class="sub">Simulación distribuida · 4 validadores · consenso BFT · eventos reales del motor</p>
+<div class="toolbar"><button class="primary" id="step">▶ Ejecutar ronda</button><button id="reset">↻ Reiniciar</button><button id="refresh">Actualizar</button></div>
+<div id="error" role="alert"></div>
+<div class="stats"><div class="stat"><small>Vista global</small><strong id="view">—</strong></div><div class="stat"><small>Líder esperado</small><strong id="leader">—</strong></div><div class="stat"><small>Cuórum</small><strong id="quorum">—</strong></div><div class="stat"><small>Última ronda</small><strong id="last">—</strong></div></div>
+<section class="panel" id="networkPanel"><div class="section-heading"><h2>Red distribuida en directo</h2><span class="pill">Estado de los validadores</span></div><div class="topology-grid"><div class="topology-graphic"><svg id="liveGraphV2" viewBox="0 0 650 420" role="img" aria-label="Topología interactiva de cuatro validadores"></svg><div id="networkActivity" class="network-activity" role="status">Selecciona un nodo para ver su estado y sus acciones.</div></div><div class="topology-side"><div class="metric-pair"><span>Validadores conectados</span><strong id="onlineCount">—</strong></div><div class="progress-track"><div class="progress-fill" id="onlineBar" style="width:0%"></div></div><div class="metric-pair"><span>Votos potenciales / cuórum</span><strong id="votePotential">—</strong></div><div id="quorumExplanation" class="explain">Cargando estado…</div><div class="legend-row"><span class="dot" style="background:#4fe2c3"></span>Conectado</div><div class="legend-row"><span class="dot" style="background:#ff8195"></span>Desconectado</div><div class="legend-row"><span class="dot" style="background:#ffc978"></span>Líder de la vista</div><div class="node-inspector"><strong id="inspectorTitle">Validador V0</strong><p id="inspectorDetails" class="muted">Selecciona un nodo del grafo.</p><div id="inspectorKey" class="muted">Clave pública: no expuesta por la API</div><div class="toolbar"><button type="button" id="inspectorToggle">Desconectar</button><button type="button" id="inspectorSync">Sincronizar</button><button type="button" id="inspectorStep">Ejecutar ronda</button></div></div></div></div><div class="live-toolbar"><button id="liveNormal" type="button">▶ Ejecutar ronda normal</button><button id="liveReset" type="button">↻ Reiniciar red</button><button id="liveRefresh" type="button">Actualizar</button><button id="livePrev" type="button">←</button><button id="liveAuto" type="button">▶ Animar</button><button id="liveNext" type="button">→</button><input id="liveScrub" type="range" min="0" max="0" value="0" aria-label="Evento de la red"><span id="liveError" role="status"></span></div><h3>Estado individual de los validadores</h3><div id="nodes" class="layout"></div></section><section class="panel" id="custodyDemo">
+ <div class="section-heading"><h2>Medicamentos · consenso y custodia confirmada</h2><span class="pill" id="custodyMode">Conectando…</span></div>
+ <p class="muted">Operación única · consenso automático · custodia real por validador. La custodia no cambia hasta el commit.</p>
+ <div class="custody-unified">
+  <div class="cu-work">
+   <form id="cuForm" class="cu-form">
+    <div class="cu-form-title"><h3>Operación farmacéutica</h3><span id="cuResult" class="cu-badge">Preparado</span></div>
+    <label>Tipo de operación <select id="cuType"><option value="register">Registrar lote</option><option value="transfer">Transferir custodia</option></select></label>
+    <label>Identificador del lote <input id="cuBatch" value="LOT-001" required></label>
+    <div id="cuRegisterFields" class="cu-fields"><label>Medicamento <input id="cuMedicine" value="Amoxicilina"></label><label>Cantidad <input id="cuQuantity" type="number" min="1" value="100"></label></div>
+    <div id="cuTransferFields" class="cu-fields" hidden><label>Emisor <select id="cuSender"><option value="laboratory">Laboratorio</option><option value="distributor">Distribuidor</option><option value="hospital">Hospital</option></select></label><label>Receptor <select id="cuReceiver"><option value="distributor">Distribuidor</option><option value="hospital">Hospital</option><option value="laboratory">Laboratorio</option></select></label></div>
+    <div class="cu-controls"><label>Máximo de rondas <input id="cuMax" type="number" min="1" max="30" value="8"></label><label>Intervalo visual <select id="cuSpeed"><option value="350">Rápido</option><option value="900" selected>Normal</option><option value="1700">Lento</option></select></label></div>
+    <fieldset class="cu-attack"><legend>Fallo durante la operación</legend><label>Escenario <select id="cuAttack"><option value="none">Sin ataque</option><option value="one">Un validador desconectado</option><option value="two">Dos validadores desconectados (sin cuórum)</option><option value="leader">Desconectar líder actual</option></select></label><div id="cuTargets" class="cu-targets"></div><small>Los ataques de esta sección son desconexiones reales mediante la API. La firma inválida y la equivocación requieren instrumentación adicional del backend.</small></fieldset>
+    <div class="cu-buttons"><button type="button" id="cuResetAll" class="secondary">↻ Reiniciar demo de farmacia</button><button type="button" id="cuContinue" class="secondary">▶ Continuar pendiente</button><button type="submit" id="cuStart">▶ Solicitar y ejecutar consenso</button><button type="button" id="cuRestore" class="secondary">↺ Restaurar nodos</button><button type="button" id="cuStop" class="secondary" disabled>■ Detener rondas</button><button type="button" id="cuRefresh" class="secondary">Actualizar</button></div>
+   </form>
+   <div class="cu-progress"><div class="cu-progress-head"><strong id="cuPhase">Esperando operación</strong><span id="cuRound">0 rondas</span></div><div class="cu-bar"><div id="cuBarFill"></div></div><div class="cu-phases"><span>Transacción</span><span>Propuesta</span><span>QC</span><span>Commit</span></div><p id="cuMessage" role="status">Elige una operación y pulsa ejecutar.</p></div>
+   <div class="cu-consensus"><div class="cu-consensus-title"><strong>Validadores y cuórum</strong><span id="cuQuorum">—</span></div><div id="cuNodes" class="cu-mini-nodes"></div><small>El líder y los estados se leen del motor. Los QC mostrados son eventos observados, no una prueba individual de commit.</small></div>
+  </div>
+  <aside class="cu-side"><div class="cu-side-title"><h3>Registro en directo</h3><span id="cuPending" class="cu-badge">0 pendientes</span></div><div id="cuCustody" class="cu-custody">Sin datos</div><h4>Historial de operaciones</h4><div id="cuHistory" class="cu-history"></div><h4>Eventos de consenso</h4><div id="cuEvents" class="cu-events"></div></aside>
+ </div>
+</section><section class="panel" id="guidePanel"><div class="section-heading"><h2>Cómo se alcanza el consenso</h2><span class="pill">Guía paso a paso</span></div><div class="guide-grid"><div class="guide-step"><b>01 · PROPOSE</b><p>El líder presenta un bloque que extiende una rama justificada.</p></div><div class="guide-step"><b>02 · VOTE</b><p>Los validadores comprueban las reglas y firman un voto si es seguro.</p></div><div class="guide-step"><b>03 · QC</b><p>Al reunir 3 votos válidos se forma un certificado de cuórum.</p></div><div class="guide-step"><b>04 · COMMIT</b><p>En Chained HotStuff una cadena de tres bloques certificados permite confirmar un ancestro bajo las reglas de vistas y bloqueo.</p></div></div><div class="explain" style="margin-top:14px">Un QC no significa que ese mismo bloque ya esté confirmado. Las reglas de confirmación requieren una cadena certificada apropiada.</div></section>
+<section class="panel" id="pharmaLabPanel" aria-labelledby="pharmaLabTitle">
+<div class="section-heading"><h2 id="pharmaLabTitle">Laboratorio visual · Chained HotStuff y medicamentos</h2><span class="pill">Explicación + evidencias del backend</span></div>
+<p class="muted">Una simulación didáctica permite seguir <strong>propuesta → validación → votos → QC → commit de un ancestro</strong>, mientras que la farmacia muestra eventos observados del motor. Los resultados didácticos no se escriben en la blockchain.</p>
+<div class="toolbar"><a class="intro-link" href="/api/education/pharma-lab" target="_blank" rel="noopener noreferrer">▶ Abrir laboratorio visual</a><a href="#custodyDemo">↓ Ejecutar una transferencia real</a><button type="button" id="plRefresh">↻ Actualizar trazas reales</button></div>
+<div class="pl-grid"><div class="pl-box"><h3>Últimos eventos observados</h3><div id="plTrace" class="pl-trace" aria-live="polite">Consultando motor…</div></div><div class="pl-box"><h3>Custodia confirmada por réplicas</h3><div id="plCustody">Consultando motor…</div><p class="muted" style="font-size:12px">Un nodo atrasado no impide el progreso con 3/4, pero solo los eventos de commit y el estado validado permiten concluir que se ha confirmado una transacción.</p></div></div>
+</section>
+<section class="panel" id="guidedAttackLab" aria-labelledby="guidedAttackTitle">
+<div class="section-heading"><h2 id="guidedAttackTitle">Escenarios guiados · Ataques HotStuff</h2><span class="pill">Modelo educativo independiente</span></div>
+<p class="muted">Recorre visualmente el consenso normal, fallos de nodos, líder ausente, equivocación, firmas inválidas, DoS y particiones. <strong>Esta guía usa Basic HotStuff y datos ilustrativos; no son eventos ni resultados del motor Chained HotStuff.</strong> Para resultados reales utiliza la red en directo, el laboratorio bizantino y el panel de custodia.</p>
+<div class="explain" style="padding:22px"><h3>1 · Introducción visual al protocolo</h3><p>Explora los ocho escenarios de tu compañero: funcionamiento normal, fallos de validadores, cambio de líder, equivocación, voto inválido, DoS y partición. Después compara la explicación con los eventos observados en la red farmacéutica.</p><a href="/api/education/attack-walkthrough" class="intro-link">▶ Abrir introducción interactiva</a><a href="#custodyDemo" style="margin-left:16px">↓ Ir a la demo de medicamentos</a><p class="muted">La introducción ilustra <strong>Basic HotStuff</strong> por fases; la farmacia ejecuta una simulación de <strong>Chained HotStuff</strong> con bloques, QC y commits. Los resultados no deben equipararse fase por fase.</p></div>
+<div class="intro-compare" aria-labelledby="compareTitle"><h3 id="compareTitle">2 · Comparar teoría y ejecución real</h3><p class="muted">La columna derecha se calcula consultando <code>/api/simulation</code>. No representa el resultado de un ataque que no se haya ejecutado.</p>
+<div class="intro-compare-table"><table><thead><tr><th>Concepto</th><th>Introducción guiada</th><th>Farmacia · estado observado</th></tr></thead><tbody>
+<tr><td>Validadores y cuórum</td><td>4 validadores, QC con 3 votos</td><td id="cmpQuorum">Consultando…</td></tr>
+<tr><td>Propuesta y QC</td><td>Prepare → Pre-Commit → Commit → Decide (Basic HotStuff)</td><td id="cmpQC">Consultando…</td></tr>
+<tr><td>Confirmación</td><td>Decide didáctico tras commitQC</td><td id="cmpCommit">Consultando…</td></tr>
+<tr><td>Fallos de nodos</td><td>Con 1 fallo puede progresar; con 2 no hay cuórum</td><td id="cmpNodes">Consultando…</td></tr>
+<tr><td>Custodia farmacéutica</td><td>No modifica ningún medicamento</td><td id="cmpCustody">Consultando…</td></tr>
+<tr><td>Ataques bizantinos</td><td>Escenarios ilustrativos de firma inválida y equivocación</td><td id="cmpAttacks">Consultando…</td></tr>
+</tbody></table></div><div class="toolbar"><button type="button" id="cmpRefresh">↻ Actualizar comparación</button><span id="cmpStatus" role="status" class="muted"></span></div></div>
+</section><section class="panel" id="attackPanel" hidden><h2>Laboratorio de ataques bizantinos</h2><p class="muted">Cada escenario se ejecuta en una red aislada. El resultado es una comprobación automática, no una garantía formal de seguridad.</p><div class="toolbar"><select id="scenario" aria-label="Escenario de ataque" style="background:#243b5d;color:#fff;border:1px solid #426188;border-radius:9px;padding:10px"></select><button class="primary" id="attack">Ejecutar escenario</button></div><div id="attackResult" role="status" class="muted">Selecciona un escenario para ver la evidencia.</div><div id="attackEvents" style="max-height:260px;overflow:auto;font-family:monospace;font-size:12px"></div></section>
+<section class="panel" id="safetyPanel"><h2>Auditoría de seguridad del consenso</h2><p class="muted">Compara los prefijos confirmados de todos los validadores. El experimento de conflicto artificial prueba el detector, no una vulnerabilidad de HotStuff.</p><div class="toolbar"><button id="safetyCheck">Auditar red actual</button><button id="safetyConflict">Inyectar conflicto de prueba</button><button class="primary" id="safetyFork">Simular líder equivocado (dos ramas)</button></div><div id="safetySummary" class="explain" role="status">Selecciona una auditoría para visualizar el resultado.</div><details id="safetyJsonDetails"><summary>Ver evidencia JSON</summary><pre id="safetyResult" style="white-space:pre-wrap;overflow-wrap:anywhere">Sin ejecutar</pre></details><div id="forkGraph" hidden><h3>Árbol de bloques del experimento</h3><svg id="forkTree" viewBox="0 0 720 330" role="img" aria-label="Árbol de bloques y bifurcaciones"></svg><div id="forkVotes"></div><div id="forkSummary" role="status"></div></div></section>
+<section class="panel"><h2>Informe multiejecución</h2>
+<p class="muted">Comparación reproducible de disponibilidad con 0, 1 y 2 nodos desconectados. Resultados obtenidos del simulador.</p>
+<div class="toolbar"><button id="reportRun" class="primary">Ejecutar 10 semillas</button><button id="reportCsv" type="button">Exportar CSV</button></div>
+<div id="reportOutput" role="status">Sin ejecutar</div></section>
+<section class="panel"><h2>Comparativa de tolerancia a fallos</h2><p class="muted">Tres simulaciones aisladas: 0, 1 o 2 validadores desconectados. Los tiempos son simulados; no representan rendimiento real.</p><div class="toolbar"><button class="primary" id="benchmarkRun">Comparar 12 rondas</button></div><div id="benchmarkOutput" role="status">Sin ejecutar</div></section>
+
+
+<section class="panel" id="eventsPanel"><div class="section-heading"><h2>Registro de eventos</h2><span class="pill">Trazas del motor</span></div><p class="muted">Filtra los eventos de la simulación principal para seguir propuestas, votos, QC, cambios de vista y fallos.</p><div class="event-filter"><label for="eventType">Categoría</label><select id="eventType"><option value="ALL">Todos</option><option value="QC">Certificados QC</option><option value="VOTE">Votos</option><option value="PROPOSE">Propuestas</option><option value="TIMEOUT">Timeout / TC</option><option value="COMMIT">Confirmaciones</option><option value="REJECT">Rechazos / inválidos</option><option value="SYNC">Sincronización</option></select><input id="eventSearch" type="search" placeholder="Buscar nodo, vista o evento…" aria-label="Buscar eventos"><button id="eventClear">Limpiar filtros</button><span id="eventCount" class="muted" aria-live="polite"></span></div><div id="events"></div></section>
+<p><small>Entorno educativo: sin transacciones farmacéuticas en este panel; los botones ejecutan operaciones del simulador en memoria. No exponer este servidor a Internet.</small></p>
+<script>
+const $=id=>document.getElementById(id);
+const roles=['Laboratorio','Distribuidor','Farmacia','Regulador'];
+let busy=false;
+async function api(path,body){if(busy)return;busy=true;document.querySelectorAll('button').forEach(b=>b.disabled=true);$('error').textContent='';try{const res=await fetch('/api/simulation'+path,{method:body===undefined?'GET':'POST',headers:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});const data=await res.json();if(!res.ok)throw Error(data.detail||`HTTP ${res.status}`);render(data.state||data);if(data.round)$('last').textContent=`${data.round.votes} votos · ${data.round.qc_formed?'QC':'sin QC'}`;if('completed' in data)$('last').textContent=data.completed?'Recuperado':'Recuperación pendiente';}catch(e){$('error').textContent='No se pudo actualizar la red: '+e.message;}finally{busy=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);}}
+function el(tag,cls,txt){const x=document.createElement(tag);if(cls)x.className=cls;if(txt!==undefined)x.textContent=String(txt);return x;}
+function render(s){$('view').textContent=s.view;$('leader').textContent=s.leader;$('quorum').textContent=s.quorum+'/4';$('nodes').replaceChildren();s.nodes.forEach((n,i)=>{const card=el('article','node');card.append(el('h3','',roles[i]+' · '+n.id),el('div',n.online?'online':'offline',n.online?'● Conectado':'● Desconectado'),el('p','muted',`Vista local: ${n.view} · Altura confirmada: ${n.height}`),el('p','muted',`Bloques: ${n.blocks} · QC: ${n.certificates}`));const btn=el('button','',n.online?'Desconectar':'Reconectar');btn.onclick=()=>api(n.online?'/disconnect':'/reconnect',{node_id:n.id});card.append(btn);if(n.online){const recover=el('button','','Sincronizar');recover.onclick=()=>api('/recover',{node_id:n.id});card.append(' ',recover);}if(n.recovering)card.append(el('p','muted','Sincronización pendiente'));$('nodes').append(card);});$('events').replaceChildren();[...s.events].reverse().forEach(e=>{const details=Object.entries(e).filter(([k])=>!['event','time'].includes(k)).map(([k,v])=>`${k}=${typeof v==='object'?JSON.stringify(v):v}`).join(' ');$('events').append(el('div','event',`${e.time?.toFixed?.(2)??'—'} | ${e.event} | ${details}`));});}
+async function loadAttacks(){try{const r=await fetch('/api/attacks');if(!r.ok)throw Error('No se puede cargar el catálogo');const data=await r.json();$('scenario').replaceChildren();for(const s of data.scenarios){const o=el('option','',s.title);o.value=s.id;$('scenario').append(o);}}catch(e){$('attackResult').textContent=e.message;}}
+async function executeAttack(){if(busy)return;busy=true;$('attack').disabled=true;$('attackResult').textContent='Ejecutando experimento…';$('attackEvents').replaceChildren();try{const r=await fetch('/api/attacks/'+encodeURIComponent($('scenario').value),{method:'POST'});const data=await r.json();if(!r.ok)throw Error(data.detail||'Error del escenario');$('attackResult').textContent=`${data.passed?'✓ PRUEBA SUPERADA':'✗ PRUEBA FALLIDA'} — ${data.observation}. Esperado: ${data.expected}`;for(const e of data.events){$('attackEvents').append(el('div','event',`${e.event} ${JSON.stringify(e)}`));}}catch(e){$('attackResult').textContent='Error: '+e.message;}finally{busy=false;$('attack').disabled=false;}}
+$('attack').onclick=executeAttack;loadAttacks();
+$('step').onclick=()=>api('/round',{});$('reset').onclick=()=>api('/reset',{});$('refresh').onclick=()=>api('');api('');
+
+async function safetyRequest(path,method='GET'){
+ const raw=$('safetyResult'),summary=$('safetySummary');
+ summary.textContent='Analizando la evidencia…';
+ try{
+  const response=await fetch(path,{method});
+  const data=await response.json();
+  if(!response.ok)throw Error(typeof data.detail==='string'?data.detail:`HTTP ${response.status}`);
+  raw.textContent=JSON.stringify(data,null,2);
+  if(path==='/api/safety/equivocation'&&data.graph){
+    drawFork(data);
+    summary.textContent=`Bifurcación analizada · QC en vista atacada: ${data.qc_formed_in_attack_view?'sí':'no'} · ${data.safety?.safe?'Sin commits incompatibles detectados':'Se detectaron commits incompatibles'}.`;
+  }else{
+    $('forkGraph').hidden=true;
+    const safe=data.safe??data.safety?.safe;
+    summary.textContent=safe===true?'Auditoría completada: no se detectaron commits incompatibles.':safe===false?'Auditoría completada: se detectaron commits incompatibles.':'Auditoría completada. Consulta la evidencia para conocer el resultado.';
+  }
+ }catch(error){summary.textContent='No se pudo completar la auditoría: '+error.message;}
+}
+$('safetyCheck').onclick=()=>safetyRequest('/api/safety');
+$('safetyConflict').onclick=()=>safetyRequest('/api/safety/injected-conflict','POST');
+$('safetyFork').onclick=()=>safetyRequest('/api/safety/equivocation','POST');
+function drawFork(data){
+  const panel=$('forkGraph'), svg=$('forkTree');panel.hidden=false;svg.replaceChildren();
+  const blocks=data.graph.blocks;
+  const positions=[[360,42],[360,137],[175,245],[545,245]];
+  const byId=new Map(blocks.map((b,i)=>[b.id,{b,i}]));
+  const NS='http://www.w3.org/2000/svg';
+  const add=(tag,attrs,text)=>{const e=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,String(v));if(text!==undefined)e.textContent=text;svg.append(e);return e;};
+  for(let i=1;i<blocks.length;i++){
+    const b=blocks[i],p=byId.get(b.parent);if(!p)continue;
+    const [x,y]=positions[i],[px,py]=positions[p.i];
+    add('path',{d:`M ${px} ${py+27} L ${px} ${(py+y)/2} L ${x} ${(py+y)/2} L ${x} ${y-27}`,stroke:'#7893b4','stroke-width':2,fill:'none'});
+  }
+  blocks.forEach((b,i)=>{
+    const [x,y]=positions[i];const fill=b.committed?'#176b53':b.certified?'#17698d':'#4a355f';
+    add('rect',{x:x-104,y:y-27,width:208,height:54,rx:10,fill,stroke:b.certified?'#70c8e8':'#8595b1','stroke-width':1.4});
+    add('text',{x,y:y-5,'text-anchor':'middle',fill:'#fff','font-size':15,'font-weight':'bold'},b.label);
+    add('text',{x,y:y+14,'text-anchor':'middle',fill:'#e0e9f6','font-size':11},`Vista ${b.view} · ${b.id.slice(0,10)}…`);
+  });
+  const votes=$('forkVotes');votes.replaceChildren();
+  for(const v of data.graph.votes){const box=el('div','voteBox');box.append(el('strong','',v.validator),el('span','',`Voto: ${v.branch} · ${v.honest?'Honesto':'Líder bizantino'}`));votes.append(box);}
+  $('forkSummary').textContent=`Cuórum: ${data.graph.quorum} votos · QC de ataque: ${data.qc_formed_in_attack_view?'Sí':'No'} · Auditoría safety: ${data.safety.safe?'sin conflicto detectado':'conflicto detectado'} · Resultado del escenario: ${data.passed?'superado':'fallido'}. El árbol muestra bloques construidos; no todos fueron aceptados por los nodos.`;
+}
+
+$('reportRun').onclick=async()=>{
+  const target=$('reportOutput'); target.textContent='Ejecutando 30 simulaciones…';
+  $('reportRun').disabled=true;
+  try {
+    const response=await fetch('/api/benchmark/report?runs=10&rounds=12&start_seed=42');
+    const report=await response.json();
+    if(!response.ok)throw new Error(typeof report.detail==='string'?report.detail:`HTTP ${response.status}`);
+    const table=document.createElement('table');
+    const head=document.createElement('tr');
+    ['Escenario','QC medio','Desv. típica','Altura media','Safety observado'].forEach(label=>{
+      const cell=document.createElement('th');cell.textContent=label;head.appendChild(cell);
+    });table.appendChild(head);
+    report.summary.forEach(item=>{
+      const tr=document.createElement('tr');
+      [item.offline_count+' desconectados',(item.mean_qc_rate*100).toFixed(1)+'%',
+      (item.stdev_qc_rate*100).toFixed(1)+' pp',item.mean_committed_height.toFixed(2),
+      item.all_safe?'Sin conflictos':'Conflicto detectado'].forEach(value=>{
+        const td=document.createElement('td');td.textContent=value;tr.appendChild(td);
+      });table.appendChild(tr);
+    });
+    target.replaceChildren(table);
+    const note=document.createElement('p');note.className='muted';note.textContent=report.limitations;
+    target.appendChild(note);
+  }catch(error){target.textContent='Error: '+error.message;}
+  finally{$('reportRun').disabled=false;}
+};
+$('reportCsv').onclick=async()=>{
+ const button=$('reportCsv');button.disabled=true;
+ try{
+  const response=await fetch('/api/benchmark/report.csv?runs=10&rounds=12&start_seed=42');
+  if(!response.ok){let detail;try{detail=(await response.json()).detail;}catch{}throw Error(detail||`HTTP ${response.status}`);}
+  const blob=await response.blob();const url=URL.createObjectURL(blob);
+  const link=document.createElement('a');link.href=url;link.download='hotstuff_runs.csv';link.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+ }catch(error){$('reportOutput').textContent='No se pudo exportar: '+error.message;}
+ finally{button.disabled=false;}
+};
+$('benchmarkRun').onclick=async()=>{
+  const target=$('benchmarkOutput');target.textContent='Ejecutando tres escenarios…';
+  $('benchmarkRun').disabled=true;
+  try{
+    const response=await fetch('/api/benchmark?rounds=12&seed=42');
+    const data=await response.json();
+    if(!response.ok)throw Error(data.detail||`HTTP ${response.status}`);
+    target.replaceChildren();
+    const table=el('table','');table.style.cssText='width:100%;border-collapse:collapse;text-align:left';
+    const head=el('tr','');
+    ['Desconectados','QC / rondas','Altura confirmada máxima','Safety observada'].forEach(x=>{const th=el('th','',x);th.style.padding='9px';head.append(th);});
+    table.append(head);
+    for(const item of data.scenarios){
+      const tr=el('tr','');
+      [item.offline_count,`${item.qc_rounds} / ${item.rounds}`,item.max_committed_height,item.safety.safe?'Sin conflictos':'Conflicto detectado'].forEach(x=>{const td=el('td','',x);td.style.cssText='padding:9px;border-top:1px solid #324764';tr.append(td);});
+      table.append(tr);
+      const bar=el('div','');bar.style.cssText='height:8px;background:#263750;border-radius:5px;margin:8px 0';
+      const fill=el('div','');fill.style.cssText=`height:100%;width:${item.qc_rate*100}%;background:#61dfa7;border-radius:5px`;bar.append(fill);
+      const detail=el('div','muted',`${item.offline_count} desconectados · QC en ${Math.round(item.qc_rate*100)}% de rondas`);
+      // Keep the numerical comparison accessible independently of the bar.
+      target.append(detail,bar);
+    }
+    target.prepend(table);
+    target.append(el('p','muted',data.limitations));
+  }catch(error){target.textContent='Error: '+error.message;}
+  finally{$('benchmarkRun').disabled=false;}
+};
+
+ // Comparison shares the attack selector and its parameters; no second form.
+ async function runByzantineComparison(mode,rounds,seed){
+   const panel=$('byzantineLab'),status=$('byzStatus');
+   panel.hidden=false;status.textContent='Calculando escenarios…';
+   try{
+     const query=new URLSearchParams({mode,rounds:String(rounds),seed:String(seed)});
+     const response=await fetch('/api/byzantine/compare?'+query);
+     const data=await response.json();
+     if(!response.ok)throw Error(typeof data.detail==='string'?data.detail:`HTTP ${response.status}`);
+     const chart=$('byzChart'),table=$('byzTable'),details=$('byzRoundsDetail');
+     chart.replaceChildren();table.replaceChildren();details.replaceChildren();
+     const t=el('table','');const header=el('tr','');
+     ['Adversarios','QC / rondas','QC %','Altura confirmada','Votos inválidos','Safety observada'].forEach(x=>header.append(el('th','',x)));
+     t.append(header);
+     for(const item of data.scenarios||[]){
+       const rate=Number(item.qc_rate)||0;
+       const line=el('div','byz-line');
+       line.append(el('span','',`${item.faulty_count} adversarios`));
+       const track=el('div','byz-track'),fill=el('div','byz-fill');
+       fill.style.width=`${Math.max(0,Math.min(100,rate*100))}%`;track.append(fill);
+       line.append(track,el('strong','',`${item.qc_rounds}/${item.rounds} · ${(rate*100).toFixed(1)}%`));chart.append(line);
+       const tr=el('tr','');
+       [item.faulty_count,`${item.qc_rounds}/${item.rounds}`,`${(rate*100).toFixed(1)}%`,item.max_committed_height,item.invalid_votes,item.safety_ok?'Sin conflicto observado':'Conflicto detectado'].forEach(x=>tr.append(el('td','',x)));
+       t.append(tr);
+       const fold=el('details',''),sum=el('summary','',`${item.faulty_count} adversarios`),pre=el('pre','',JSON.stringify(item.round_details||[],null,2));
+       fold.append(sum,pre);details.append(fold);
+     }
+     table.append(t);status.textContent=`${rounds} rondas por escenario · semilla ${seed}. Los resultados no son una prueba formal de seguridad.`;
+   }catch(error){status.textContent='Comparación no disponible: '+error.message;}
+ }
+ $('byzCsv').onclick=()=>{
+   const mode=$('vlScenario').value;
+   if(!['omit','invalid_signature'].includes(mode))return;
+   const query=new URLSearchParams({mode,rounds:$('vlRounds').value,seed:$('vlSeed').value});
+   window.location.assign('/api/byzantine/compare.csv?'+query);
+ };
+ window.runByzantineComparison=runByzantineComparison;
+const topologyNS='http://www.w3.org/2000/svg';
+let latestState=null;
+function svgElement(tag,attrs,text){const n=document.createElementNS(topologyNS,tag);for(const [key,value] of Object.entries(attrs))n.setAttribute(key,String(value));if(text!==undefined)n.textContent=String(text);return n;}
+let selectedNode=0;
+const networkCoords=[[160,105],[490,105],[160,305],[490,305]];
+function renderTopology(state){
+ const root=$('topologySvg');if(!root)return;
+ root.setAttribute('viewBox','0 0 650 420');root.replaceChildren();
+ const nodes=Array.isArray(state?.nodes)?state.nodes:[];
+ const byId=new Map(nodes.map(n=>[n.id,n]));
+ const list=Array.from({length:4},(_,i)=>byId.get(`validator-${i}`)||nodes[i]||{id:`validator-${i}`,online:null,view:'—',height:'—',certificates:'—'});
+ const events=Array.isArray(state?.events)?state.events:[];
+ const last=events.at(-1)||null;
+ const endpoint=v=>{if(typeof v==='number')return v>=0&&v<4?v:-1;const m=String(v??'').match(/(?:validator-|^V)([0-3])$/i);return m?Number(m[1]):-1;};
+ const source=endpoint(last?.source??last?.sender??last?.node_id??last?.validator);
+ const target=endpoint(last?.target??last?.receiver??last?.destination);
+ const add=(tag,attrs,txt)=>{const x=svgElement(tag,attrs,txt);root.append(x);return x;};
+ for(let i=0;i<4;i++)for(let j=i+1;j<4;j++){
+   const a=networkCoords[i],b=networkCoords[j];
+   add('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke:'#345c74','stroke-width':2,'stroke-dasharray':'6 8',opacity:.8});
+ }
+ if(source>=0&&target>=0&&source!==target){
+   const a=networkCoords[source],b=networkCoords[target];
+   add('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke:'#ffc978','stroke-width':4});
+   const dot=svgElement('circle',{r:6,fill:'#ffda89'});
+   dot.append(svgElement('animateMotion',{dur:'1.6s',repeatCount:'indefinite',path:`M${a[0]},${a[1]} L${b[0]},${b[1]}`}));root.append(dot);
+ }
+ list.forEach((n,i)=>{
+   const [x,y]=networkCoords[i],isLead=n.id===state?.leader,online=n.online;
+   const g=svgElement('g',{tabindex:0,role:'button','aria-label':`Inspeccionar ${n.id}`,style:'cursor:pointer'});
+   const addChild=(tag,attrs,txt)=>g.append(svgElement(tag,attrs,txt));
+   addChild('rect',{x:x-127,y:y-56,width:254,height:112,rx:13,fill:online===false?'#432636':online===true?'#123e43':'#20344c',stroke:selectedNode===i?'#ffc978':online===false?'#ff8195':'#4fe2c3','stroke-width':selectedNode===i?3:1.5});
+   addChild('text',{x:x-109,y:y-31,fill:'#fff','font-size':17,'font-weight':700},`V${i} · ${n.id}`);
+   addChild('text',{x:x-109,y:y-10,fill:isLead?'#ffc978':'#c8d9e9','font-size':13},`${isLead?'★ Líder · ':''}${online===true?'Conectado':online===false?'Desconectado':'Estado pendiente'}`);
+   addChild('text',{x:x-109,y:y+13,fill:'#c8d9e9','font-size':12},`Vista: ${n.view??'—'} · Altura: ${n.height??'—'}`);
+   addChild('text',{x:x-109,y:y+34,fill:'#a6d8e0','font-size':12},`Certificados: ${n.certificates??'—'} · ${i===source?'Emite evento':i===target?'Recibe evento':'Sin acción atribuida'}`);
+   g.addEventListener('click',()=>{selectedNode=i;renderTopology(state);});
+   g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectedNode=i;renderTopology(state);}});
+   root.append(g);
+ });
+ const n=list[selectedNode],online=list.filter(n=>n.online===true).length,known=list.every(n=>typeof n.online==='boolean');
+ $('onlineCount').textContent=known?`${online}/4`:'Sin determinar';
+ $('onlineBar').style.width=known?`${online*25}%`:'0%';
+ const q=Number(state?.quorum)||3;
+ $('votePotential').textContent=known?`${online}/${q}`:'Sin determinar';
+ $('quorumExplanation').textContent=known?(online>=q?'Cuórum matemáticamente posible; un QC exige votos válidos.':'No hay suficientes nodos conectados para alcanzar el cuórum.'):'La topología está visible; esperando estado de la API.';
+ $('inspectorTitle').textContent=`V${selectedNode} · ${n.id}`;
+ $('inspectorDetails').textContent=`${n.online===true?'Conectado':n.online===false?'Desconectado':'Estado desconocido'} · Vista ${n.view??'—'} · Altura ${n.height??'—'} · QC ${n.certificates??'—'}`;
+ $('inspectorKey').textContent=n.public_key?`Clave pública: ${String(n.public_key).slice(0,48)}…`:'Clave pública: no expuesta por la API';
+ $('inspectorToggle').textContent=n.online===false?'Reconectar':'Desconectar';
+ $('inspectorToggle').disabled=typeof n.online!=='boolean';
+ $('inspectorSync').disabled=n.online!==true;
+ $('networkActivity').textContent=last?`Último evento: ${last.event||last.name||'—'} · ${source>=0?'V'+source:'origen no registrado'} → ${target>=0?'V'+target:'destino no registrado'}`:'Sin eventos registrados todavía. Ejecuta una ronda para observar la actividad.';
+}
+$('inspectorToggle').addEventListener('click',()=>{const n=latestState?.nodes?.[selectedNode];if(n&&typeof n.online==='boolean')api(n.online?'/disconnect':'/reconnect',{node_id:n.id});});
+$('inspectorSync').addEventListener('click',()=>{const n=latestState?.nodes?.[selectedNode];if(n)api('/recover',{node_id:n.id});});
+$('inspectorStep').addEventListener('click',()=>api('/round',{}));
+function eventCategory(name){const e=String(name||'').toUpperCase();if(e.includes('INVALID')||e.includes('REJECT')||e.includes('DENIED'))return 'REJECT';if(e.includes('TIMEOUT')||e.includes('TC_')||e.endsWith('_TC'))return 'TIMEOUT';if(e.includes('QC')||e.includes('CERTIFICATE'))return 'QC';if(e.includes('COMMIT'))return 'COMMIT';if(e.includes('VOTE'))return 'VOTE';if(e.includes('PROPOS')||e.includes('BLOCK_CREATED'))return 'PROPOSE';if(e.includes('SYNC')||e.includes('RECOVER'))return 'SYNC';return 'OTHER';}
+function renderFilteredEvents(){if(!latestState)return;const events=latestState.events||[];const filter=$('eventType').value;const search=$('eventSearch').value.toLowerCase();const target=$('events');target.replaceChildren();let shown=0;
+ for(const e of [...events].reverse()){const category=eventCategory(e.event);if(filter!=='ALL'&&filter!==category)continue;const details=Object.entries(e).filter(([k])=>!['event','time'].includes(k)).map(([k,v])=>`${k}=${typeof v==='object'?JSON.stringify(v):v}`).join(' ');const message=`${typeof e.time==='number'?e.time.toFixed(2):'—'} | ${e.event} | ${details}`;if(!message.toLowerCase().includes(search))continue;const div=el('div','event',message);div.dataset.kind=category;target.append(div);shown++;}
+ $('eventCount').textContent=`${shown} de ${events.length} eventos`;if(!shown)target.append(el('p','muted','No hay eventos que coincidan con los filtros.'));
+}
+renderTopology(null);
+const previousRender=render;
+render=function(state){latestState=state;renderTopology(state);try{previousRender(state);}catch(error){console.error("Error en tarjetas o eventos:",error);}try{renderFilteredEvents();}catch(error){console.error("Error en filtros:",error);}};
+$('eventType').addEventListener('change',renderFilteredEvents);$('eventSearch').addEventListener('input',renderFilteredEvents);
+$('eventClear').onclick=()=>{$('eventType').value='ALL';$('eventSearch').value='';renderFilteredEvents();};
+function renderAttackModel(count){const box=$('attackModel');box.replaceChildren();for(let i=0;i<4;i++){const bad=i>=4-count;const node=el('div','attack-node '+(bad?'bad':'good'));node.append(el('strong','',`Validador ${i}`),el('small','',bad?'⚠ Malicioso':'✓ Honesto'));box.append(node);}}
+
+fetch("/api/simulation").then(async r=>{if(!r.ok)throw Error(`HTTP ${r.status}`);return r.json();}).then(s=>render(s.state||s)).catch(error=>{$("quorumExplanation").textContent="No se pudo cargar el estado: "+error.message;console.error("API simulation:",error);});
+</script>
+
+<link rel="stylesheet" href="/api/visual/assets/visual_lab.css">
+<section class="panel" id="visualLab" aria-label="Laboratorio visual de ataques">
+ <div class="section-heading"><h2>Laboratorio de ataques bizantinos</h2><span class="pill">Evidencia del simulador</span></div>
+ <p class="muted">Selecciona un escenario, ejecútalo y examina sus eventos, verificaciones y resultados.</p>
+ <div class="vl-controls">
+  <label class="vl-control-label" for="vlScenario">Escenario de evaluación</label>
+  <select id="vlScenario"><option value="offline_leader">Líder desconectado</option><option value="quorum_loss">Pérdida de cuórum</option><option value="forged_qc">QC falsificado</option><option value="duplicate_qc">QC duplicado</option><option value="unsolicited_sync">Sync no solicitado</option><option value="valid_sync">Sync legítimo (control)</option><option value="equivocation">Líder equívoco / fork</option><option value="omit">Votos omitidos (0/1/2)</option><option value="invalid_signature">Firmas inválidas (0/1/2)</option></select>
+  <label class="vl-control-label" for="vlRounds">Rondas</label><input id="vlRounds" type="number" min="1" max="100" value="12" style="width:74px">
+  <label class="vl-control-label" for="vlSeed">Semilla</label><input id="vlSeed" type="number" value="42" style="width:84px">
+  <button id="vlLoad" class="primary">▶ Ejecutar experimento</button>
+  <select id="vlScenarioCount" aria-label="Número de validadores maliciosos" hidden></select>
+ </div>
+ <p id="vlStatus" role="status" class="muted">Elige una prueba y ejecútala.</p>
+ <div class="vl-statgrid" aria-label="Indicadores del escenario"><div class="vl-stat"><small>QC / rondas</small><strong id="vlMetric1">—</strong></div><div class="vl-stat"><small>Votos inválidos</small><strong id="vlMetric2">—</strong></div><div class="vl-stat"><small>Altura confirmada</small><strong id="vlMetric3">—</strong></div></div>
+ <div class="vl-grid" style="margin-top:14px">
+  <div class="vl-box vl-simulator"><div class="vl-simulator-heading"><h3>Simulador de red · actividad por nodo</h3><span class="vl-simulator-subtitle">Reproducción de eventos del experimento</span></div><div class="vl-playback-layout"><svg id="vlNetwork" viewBox="0 0 570 320" role="img" aria-label="Animación de validadores y mensajes registrados"></svg><aside class="vl-side" aria-label="Análisis del consenso"><h4>Cuórum del experimento</h4><div id="vlLiveQuorum" class="vl-quorum-state" aria-live="polite">Selecciona un escenario</div><div class="vl-quorum-meter"><div id="vlLiveQuorumBar"></div><span class="vl-threshold" title="Umbral mínimo de tres votos">3/4</span></div><div id="vlLiveVoters" class="vl-voter-grid"></div><p id="vlLiveExplanation" class="vl-info"></p><h4>Calculadora BFT</h4><label for="vlNodeCount" class="vl-control-label">Validadores totales (n)</label><input id="vlNodeCount" type="number" min="4" max="100" step="1" value="4" style="width:90px"><p id="vlFormula" class="vl-info">n = 4 · f = 1 · QC = 3</p><h4>Certificación y validación</h4><div id="vlLiveChecks" class="vl-checks"></div><h4>Evento seleccionado</h4><p id="vlLiveEvent" class="vl-info">Sin eventos</p></aside></div>
+   <div class="vl-controls"><button id="vlPrev" disabled>← Anterior</button><button id="vlPlay" disabled>▶ Reproducir</button><button id="vlNext" disabled>Siguiente →</button><label for="vlSpeed" class="vl-control-label">Velocidad</label><select id="vlSpeed"><option value="1800">Lenta</option><option value="950" selected>Normal</option><option value="350">Rápida</option></select><span id="vlCounter" class="muted">Sin eventos</span></div>
+   <input id="vlProgress" class="vl-progress" type="range" min="0" max="1" value="0" aria-label="Posición de la animación"><div id="vlSteps" class="vl-steps" aria-label="Ir a evento"></div>
+
+  </div>
+  <div class="vl-box"><h3 id="vlTitle">Selecciona un experimento</h3><p><strong class="vl-key">¿Cómo se ejecuta?</strong></p><p id="vlMechanism" class="vl-info">—</p><p><strong class="vl-key">¿Qué compromete?</strong></p><p id="vlImpact" class="vl-info">—</p><p><strong class="vl-key">¿Cómo se mitiga?</strong></p><p id="vlMitigation" class="vl-info">—</p><p><strong class="vl-key">¿Qué esperamos?</strong></p><p id="vlExpected" class="vl-info">—</p></div>
+ </div>
+  <div class="vl-box" id="attackOutcomes" style="margin-top:14px"><h3>Resistencia del protocolo frente a los ataques</h3><p class="muted">La clasificación se calcula con el resultado de cada prueba. «Resistido» significa que se cumplió el criterio programado, no que exista una demostración formal.</p><div id="attackOutcomeRows" class="attack-outcome-grid"><span>Ejecuta un ataque para obtener su resultado.</span></div><p class="muted">Con n=4, f=1: un fallo bizantino entra en el modelo tolerado; dos lo superan. Seguridad y progreso se evalúan por separado.</p></div>
+<div class="vl-integrated-benchmark" id="byzantineLab" hidden>
+    <div class="section-heading"><h3>Resultados por número de adversarios</h3><button type="button" id="byzCsv">Exportar CSV</button></div>
+    <p id="byzStatus" role="status" aria-live="polite"></p>
+    <div id="byzChart" aria-label="Porcentaje de rondas con QC"></div>
+    <div id="byzTable"></div>
+    <details class="vl-detail"><summary>Consultar rondas individuales</summary><div id="byzRoundsDetail"></div></details>
+  </div>
+ <div class="vl-grid" style="margin-top:14px"><div class="vl-box"><h3>Registro de evidencia · Evento seleccionado</h3><strong id="vlEventName">—</strong><p id="vlEventMeaning" class="vl-info">—</p><details><summary>Ver evidencia JSON del evento</summary><pre id="vlEventData" class="vl-code">—</pre></details></div><div class="vl-box"><h3>Resultados, conclusión y limitaciones</h3><p id="vlConclusion" class="vl-conclusion">Ejecuta una prueba para generar la conclusión.</p><p id="vlLimits" class="vl-warning"></p></div></div>
+</section>
+<script src="/api/visual/assets/visual_lab.js" defer></script>
+
+<script src="/api/visual/assets/attack_outcomes.js" defer></script>
+<script>
+/* El grafo principal se incluye aquí para evitar 404 de recursos estáticos no registrados. */
+/* Grafo autónomo: no depende de renderTopology, visual_lab.js ni de claves privadas. */
+(() => {
+ 'use strict';
+ const $ = id => document.getElementById(id);
+ const NS='http://www.w3.org/2000/svg';
+ const coords=[[180,120],[540,120],[180,385],[540,385]];
+ const names=['Laboratorio','Distribuidor','Farmacia','Regulador'];
+ let state=null, selected=0, cursor=0, playing=null, busy=false, lastLength=-1;
+ const element=(tag,attrs={},value)=>{const e=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,String(v));if(value!==undefined)e.textContent=String(value);return e;};
+ const put=(parent,tag,attrs={},value)=>{const e=element(tag,attrs,value);parent.append(e);return e;};
+ const idx=value=>{if(typeof value==='number'&&value>=0&&value<4)return value;const m=String(value??'').match(/(?:validator[-_]|^v)([0-3])$/i);return m?+m[1]:-1;};
+ const events=()=>Array.isArray(state?.events)?state.events:[];
+ const nodes=()=>Array.from({length:4},(_,i)=>state?.nodes?.find(n=>idx(n.id)===i)||state?.nodes?.[i]||{id:`validator-${i}`});
+ const eventAt=()=>events()[cursor]||null;
+ function draw(){
+   const root=$('liveGraphV2');if(!root)return;
+   root.setAttribute('viewBox','0 0 720 505');root.setAttribute('preserveAspectRatio','xMidYMid meet');root.replaceChildren();
+   put(root,'rect',{x:1,y:1,width:718,height:503,rx:14,fill:'#09192b',stroke:'#35536e'});
+   const ev=eventAt(),src=idx(ev?.source??ev?.sender??ev?.validator??ev?.node_id),dst=idx(ev?.target??ev?.receiver??ev?.destination);
+   for(let i=0;i<4;i++)for(let j=i+1;j<4;j++){
+     const a=coords[i],b=coords[j];put(root,'line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke:'#3a5873','stroke-width':2,'stroke-dasharray':'5 9'});
+   }
+   if(src>=0&&dst>=0&&src!==dst){
+     const a=coords[src],b=coords[dst];put(root,'line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke:'#ffd18a','stroke-width':5});
+     const dot=put(root,'circle',{r:8,fill:'#fff0bd'});
+     put(dot,'animateMotion',{dur:'1.35s',repeatCount:'indefinite',path:`M${a[0]},${a[1]} L${b[0]},${b[1]}`});
+   }
+   const list=nodes();
+   list.forEach((n,i)=>{
+     const [x,y]=coords[i],lead=n.id===state?.leader,active=i===src||i===dst;
+     const group=put(root,'g',{role:'button',tabindex:0,style:'cursor:pointer','aria-label':`Seleccionar validador V${i}`});
+     put(group,'rect',{x:x-146,y:y-78,width:292,height:156,rx:13,fill:n.online===false?'#522b39':n.online===true?'#123f45':'#21374d',stroke:i===selected?'#ffd18a':n.online===false?'#ff8497':active?'#ffe1a0':'#66dcca','stroke-width':i===selected?4:2});
+     put(group,'text',{x:x-127,y:y-49,fill:'#fff','font-size':19,'font-weight':700},`V${i} · ${names[i]}`);
+     put(group,'text',{x:x-127,y:y-23,fill:lead?'#ffd18a':'#cfe5f0','font-size':13},`${lead?'★ Líder · ':''}${n.online===true?'Conectado':n.online===false?'Desconectado':'Estado no recibido'}`);
+     put(group,'text',{x:x-127,y:y+3,fill:'#d7e9f5','font-size':12},`Vista ${n.view??'—'}   Altura ${n.height??'—'}   QC ${n.certificates??'—'}`);
+     const action=i===src?`Envía ${ev?.event||ev?.name||'evento'}`:i===dst?`Recibe ${ev?.event||ev?.name||'evento'}`:'Sin mensaje dirigido registrado';
+     put(group,'text',{x:x-127,y:y+28,fill:active?'#ffe2a5':'#b8cfe0','font-size':12},action.slice(0,41));
+     const key=n.public_key||n.publicKey;
+     put(group,'text',{x:x-127,y:y+52,fill:'#a9d9e1','font-size':11},key?`Clave pública: ${String(key).slice(0,23)}…`:'Clave pública no expuesta');
+     const choose=()=>{selected=i;draw();};group.addEventListener('click',choose);group.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose();}});
+   });
+   const known=list.every(n=>typeof n.online==='boolean'),online=list.filter(n=>n.online===true).length,q=Number(state?.quorum)||3;
+   if($('onlineCount'))$('onlineCount').textContent=known?`${online}/4`:'—';
+   if($('onlineBar'))$('onlineBar').style.width=known?`${online*25}%`:'0%';
+   if($('votePotential'))$('votePotential').textContent=known?`${online}/${q}`:'—';
+   if($('quorumExplanation'))$('quorumExplanation').textContent=known?(online>=q?'Cuórum alcanzable si se reciben votos distintos y válidos.':'Sin suficientes nodos conectados para el cuórum.'):'Topología disponible; esperando respuesta de la API.';
+   const n=list[selected];
+   if($('inspectorTitle'))$('inspectorTitle').textContent=`V${selected} · ${names[selected]}`;
+   if($('inspectorDetails'))$('inspectorDetails').textContent=`${n.online===true?'Conectado':n.online===false?'Desconectado':'Sin datos'} · Vista ${n.view??'—'} · Altura ${n.height??'—'} · QC ${n.certificates??'—'}`;
+   if($('inspectorKey'))$('inspectorKey').textContent=n.public_key?`Clave pública: ${n.public_key}`:'Clave pública no expuesta por la API. Nunca se muestra la clave privada.';
+   if($('inspectorToggle')){$('inspectorToggle').disabled=typeof n.online!=='boolean';$('inspectorToggle').textContent=n.online===false?'Reconectar':'Desconectar';}
+   if($('inspectorSync'))$('inspectorSync').disabled=n.online!==true;
+   if($('networkActivity'))$('networkActivity').textContent=ev?`Evento ${cursor+1}/${events().length}: ${ev.event||ev.name||'evento'} · ${src<0?'origen desconocido':'V'+src} → ${dst<0?'destino desconocido':'V'+dst}`:'Sin eventos de comunicación seleccionados. Ejecuta una ronda para generar actividad.';
+   const scrub=$('liveScrub');if(scrub){scrub.max=Math.max(0,events().length-1);scrub.value=Math.min(cursor,events().length-1);scrub.disabled=events().length<2;}
+ }
+ async function refresh(){
+   try{const r=await fetch('/api/simulation',{cache:'no-store'});if(!r.ok)throw Error(`HTTP ${r.status}`);const body=await r.json();const data=body.state||body;if(!Array.isArray(data.nodes))throw Error('Falta nodes[] en la respuesta');state=data;if(events().length!==lastLength){cursor=Math.max(0,events().length-1);lastLength=events().length;}if($('liveError'))$('liveError').textContent='';draw();}
+   catch(e){if($('liveError'))$('liveError').textContent=`Error de actualización: ${e.message}`;draw();}
+ }
+ async function act(path,body={}){
+   if(busy)return;busy=true;
+   try{const r=await fetch('/api/simulation'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok){const data=await r.json().catch(()=>({}));throw Error(data.detail||`HTTP ${r.status}`);}await refresh();}
+   catch(e){if($('liveError'))$('liveError').textContent=`Error en operación: ${e.message}`;}finally{busy=false;}
+ }
+ function init(){
+   if(!$('liveGraphV2'))return;draw();refresh();
+   $('liveNormal')?.addEventListener('click',()=>act('/round'));
+   $('liveReset')?.addEventListener('click',()=>act('/reset'));
+   $('liveRefresh')?.addEventListener('click',refresh);
+   $('livePrev')?.addEventListener('click',()=>{cursor=Math.max(0,cursor-1);draw();});
+   $('liveNext')?.addEventListener('click',()=>{cursor=Math.min(events().length-1,cursor+1);draw();});
+   $('liveScrub')?.addEventListener('input',e=>{cursor=Number(e.target.value);draw();});
+   $('inspectorToggle')?.addEventListener('click',()=>{const n=nodes()[selected];if(typeof n.online==='boolean')act(n.online?'/disconnect':'/reconnect',{node_id:n.id});});
+   $('inspectorSync')?.addEventListener('click',()=>act('/recover',{node_id:nodes()[selected].id}));
+   $('inspectorStep')?.addEventListener('click',()=>act('/round'));
+   $('liveAuto')?.addEventListener('click',e=>{if(playing){clearInterval(playing);playing=null;e.target.textContent='▶ Animar';return;}cursor=0;draw();e.target.textContent='⏸ Pausar';playing=setInterval(()=>{if(cursor>=events().length-1){clearInterval(playing);playing=null;e.target.textContent='▶ Animar';return;}cursor++;draw();},1000);});
+   // El refresco no debe saltar el reproductor si no hay eventos nuevos.
+   setInterval(()=>{if(!playing)refresh();},5000);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+
+</script>
+<script>
+/* Cuórum del laboratorio: separa votos posibles, votos rechazados y QC observados. */
+(() => {
+ 'use strict';
+ const $=id=>document.getElementById(id);
+ const add=(p,tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=String(text);p.append(e);return e;};
+ const num=v=>Number.isFinite(Number(v))?Number(v):null;
+ function show(data){
+   const panel=$('byzQcInspector');if(!panel)return;
+   panel.replaceChildren();
+   add(panel,'strong','','Cuórum y validación del ataque');
+   const mode=$('vlScenario')?.value;
+   if(!['omit','invalid_signature'].includes(mode)){
+     add(panel,'p','','Selecciona «Omitir votos» o «Firma inválida» para comparar el efecto sobre el cuórum.');return;
+   }
+   const scenarios=Array.isArray(data?.scenarios)?data.scenarios:[];
+   if(!scenarios.length){add(panel,'p','','Ejecuta el experimento para consultar los certificados observados.');return;}
+   const grid=add(panel,'div','qc-row');
+   for(const s of scenarios){
+     const bad=num(s.faulty_count),rounds=num(s.rounds),qc=num(s.qc_rounds),invalid=num(s.invalid_votes);
+     const box=add(grid,'div','qc-cell');
+     add(box,'span','',`${bad??'—'} adversario(s)`);
+     add(box,'strong','',rounds!==null&&qc!==null?`${qc}/${rounds} QC`:'QC: sin datos');
+     add(box,'small','',bad!==null?`${Math.max(0,4-bad)}/4 votos honestos posibles; mínimo 3`:'Votos honestos no determinados');
+     if(mode==='invalid_signature'&&invalid!==null)add(box,'small','',` · ${invalid} votos inválidos registrados`);
+   }
+   const chosen=scenarios.find(s=>String(s.faulty_count)===$('vlScenarioCount')?.value)||scenarios[0];
+   const bad=num(chosen.faulty_count),honest=bad===null?null:4-bad;
+   const explanation=mode==='omit'?'Los adversarios omiten votos: no deben contabilizarse para formar el certificado.':'Los votos con firmas inválidas deben rechazarse y no contribuir al certificado.';
+   add(panel,'p','',explanation);
+   if(honest!==null)add(panel,'p','',honest>=3?`Con ${honest} validadores honestos, el cuórum sigue siendo posible. Los QC observados aparecen arriba.`:`Con ${honest} validadores honestos no se puede alcanzar un QC únicamente con sus votos. Dos adversarios exceden f=1.`);
+   add(panel,'small','','El recuento de QC procede de la respuesta del experimento; el número de votos honestos posibles es una estimación teórica.');
+ }
+ async function load(){
+   const mode=$('vlScenario')?.value;
+   if(!['omit','invalid_signature'].includes(mode)){show(null);return;}
+   const rounds=Number($('vlRounds')?.value),seed=Number($('vlSeed')?.value);
+   if(!Number.isInteger(rounds)||rounds<1||rounds>100||!Number.isSafeInteger(seed))return;
+   const params=new URLSearchParams({mode,rounds:String(rounds),seed:String(seed)});
+   try{const response=await fetch('/api/visual/byzantine?'+params);if(!response.ok)throw Error(`HTTP ${response.status}`);show(await response.json());}
+   catch(e){const panel=$('byzQcInspector');if(panel)panel.textContent='No se pudo consultar el cuórum del ataque: '+e.message;}
+ }
+ function init(){
+   const anchor=$('vlLiveEvent');if(!anchor||$('byzQcInspector'))return;
+   const panel=document.createElement('div');panel.id='byzQcInspector';anchor.parentElement.append(panel);
+   $('vlLoad')?.addEventListener('click',()=>setTimeout(load,100));
+   $('vlScenarioCount')?.addEventListener('change',load);
+   $('vlScenario')?.addEventListener('change',()=>show(null));
+   show(null);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+
+</script>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let state=null,running=false,cancel=false,history=[];
+async function api(path,body){const r=await fetch('/api/simulation'+path,{method:body===undefined?'GET':'POST',headers:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),cache:'no-store'});let d=await r.json();if(!r.ok)throw Error(typeof d.detail==='string'?d.detail:JSON.stringify(d.detail||d));return d.state||d;}
+function delay(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
+function online(){return (state?.nodes||[]).filter(n=>n.online).length;}
+function owner(batch){const counts={};for(const n of state?.nodes||[]){if(!n.online)continue;const v=state?.custody_by_node?.[n.id]?.[batch];if(v)counts[v]=(counts[v]||0)+1;}return Object.entries(counts).find(([,c])=>c>=state.quorum)?.[0]??null;}
+function owners(batch){return (state?.nodes||[]).map(n=>(state?.custody_by_node||{})[n.id]?.[batch]??null);}
+function eventCount(type){return (state?.events||[]).filter(e=>e.event===type).length;}
+function setMessage(msg){$('cuMessage').textContent=msg;}
+function phase(text,n,max){$('cuPhase').textContent=text;$('cuRound').textContent=`${n} / ${max} rondas`;$('cuBarFill').style.width=(100*Math.min(n,max)/max)+'%';}
+function draw(s){state=s;const nodes=s.nodes||[],batch=$('cuBatch').value.trim();$('custodyMode').textContent=s.pharmaceutical_transactions_enabled?'● Motor conectado':'API farmacéutica no habilitada';$('cuQuorum').textContent=`${online()}/${nodes.length} conectados · cuórum ${s.quorum}/${nodes.length} · QC ${eventCount('QC_FORMED')}`;
+ $('cuNodes').innerHTML=nodes.map(n=>`<div class="cu-mini-node ${n.online?'':'off'} ${s.leader===n.id?'leader':''}"><strong>${esc(n.id.replace('validator-','V'))}</strong><span>${esc(['Laboratorio','Distribuidor','Hospital','Regulador'][Number(n.id.split('-').pop())]||n.id)}</span><br>${n.online?'● Activo':'● Caído'}${s.leader===n.id?' · Líder':''}<br>Altura ${esc(n.height)} · QC ${esc(n.certificates)}</div>`).join('');
+ const map=s.custody_by_node||{},ids=Object.keys(map).sort(),batches=[...new Set(ids.flatMap(id=>Object.keys(map[id]||{})))].sort(),pending=s.pending_transactions||[];
+ $('cuPending').textContent=`${pending.length} pendientes`;
+ $('cuCustody').innerHTML=batches.length?batches.map(b=>{const values=ids.map(id=>map[id]?.[b]??null),same=new Set(values).size===1,majority=owner(b);return `<div class="cu-line"><b>${esc(b)}</b> · ${same?esc(values[0]||'Sin custodio'):majority?'✓ Custodia confirmada por cuórum: '+esc(majority)+' · réplica(s) atrasada(s)':'⚠ Sin estado confirmado por cuórum'}<div style="font-size:11px;color:#b1c9d8">${ids.map(id=>esc(id.replace('validator-','V'))+': '+esc(map[id]?.[b]||'—')).join(' · ')}</div></div>`;}).join(''):'Todavía no hay lotes confirmados.';
+ $('cuHistory').innerHTML=history.length?history.slice(0,18).map(h=>`<div class="cu-line">${esc(h)}</div>`).join(''):'Las operaciones aparecerán aquí.';
+ const events=(s.events||[]).filter(e=>['TX_PENDING','TX_COMMITTED','QC_FORMED','COMMITTED','VOTE_REJECTED','NODE_DISCONNECTED','NODE_RECONNECTED','PROPOSED'].includes(e.event)).slice(-28).reverse();
+ $('cuEvents').innerHTML=events.map(e=>`<div class="cu-line"><b>${esc(e.event)}</b> · ${esc(e.node||e.sender||'red')} · ${esc(e.batch_id||e.block||'')} ${e.event==='TX_COMMITTED'?esc((e.previous_custodian||'—')+' → '+(e.new_custodian||'—')):''}</div>`).join('')||'Sin eventos recientes.';
+}
+function targets(){const nodes=state?.nodes||[];$('cuTargets').innerHTML=nodes.map((n,i)=>`<label><input type="checkbox" class="cu-target" value="${esc(n.id)}" ${i===3?'checked':''}> ${esc(n.id.replace('validator-','V'))}</label>`).join('');}
+function typeChange(){const transfer=$('cuType').value==='transfer';$('cuRegisterFields').hidden=transfer;$('cuTransferFields').hidden=!transfer;}
+async function refresh(){draw(await api(''));}
+function chosenNodes(){const n=(state?.nodes||[]).map(x=>x.id);const marked=[...document.querySelectorAll('.cu-target:checked')].map(x=>x.value);const attack=$('cuAttack').value;if(attack==='none')return [];if(attack==='leader')return [state.leader];return (marked.length?marked:n.slice(-2)).slice(0,attack==='one'?1:2);}
+async function restore(){if(running)return;try{await refresh();for(const n of state.nodes.filter(n=>!n.online)){await api('/reconnect',{node_id:n.id});}await refresh();history.unshift('Red restaurada: validadores reconectados.');draw(state);setMessage('Conectividad restaurada; sincronización solicitada. La custodia confirmada por cuórum no depende de que todos los nodos estén al día.');}catch(e){setMessage('Error: '+e.message);}}
+async function resetPharmacy(){
+ if(running){setMessage('Detén las rondas antes de reiniciar.');return;}
+ if(!window.confirm('¿Reiniciar toda la simulación farmacéutica? Se borrarán lotes, transferencias pendientes, bloques simulados y eventos. No afecta a la introducción independiente.'))return;
+ try{const s=await api('/reset',{});history=[];draw(s);targets();$('cuResult').textContent='Reiniciado';phase('Nueva simulación',0,1);setMessage('Demo reiniciada: todos los validadores vuelven al estado inicial y no quedan operaciones pendientes.');}
+ catch(e){setMessage('No se pudo reiniciar: '+e.message);}
+}
+async function continuePending(){
+ if(running)return;
+ running=true;cancel=false;$('cuStart').disabled=true;$('cuContinue').disabled=true;$('cuStop').disabled=false;
+ try{
+  await refresh();const pending=state.pending_transactions||[];
+  if(!pending.length){setMessage('No hay transacciones pendientes; puedes solicitar una operación nueva.');return;}
+  const max=Number($('cuMax').value),speed=Number($('cuSpeed').value);
+  if(!Number.isInteger(max)||max<1||max>30)throw Error('Elige entre 1 y 30 rondas');
+  const tx=pending[0];history.unshift('Reanudando transacción pendiente: '+tx.batch_id+' ('+tx.type+')');
+  for(let i=1;i<=max&&!cancel;i++){
+   const s=await api('/round',{});draw(s);phase('Continuando vista '+s.view,i,max);
+   const left=(s.pending_transactions||[]).some(t=>t.tx_id===tx.tx_id);
+   history.unshift('Reanudación ronda '+i+' · vista '+s.view+(left?' · pendiente':' · transacción retirada de mempool'));
+   draw(s);
+   if(!left){$('cuResult').textContent='✓ Finalizada';setMessage('Transacción retirada de mempool; comprueba custodia por cuórum y TX_COMMITTED antes de considerarla confirmada.');break;}
+   if(online()<s.quorum){$('cuResult').textContent='Sin cuórum';setMessage('No hay cuórum. Restaura los validadores y vuelve a pulsar Continuar pendiente.');break;}
+   if(i===max)setMessage('Sigue pendiente. Puedes continuar con más rondas sin reenviar la solicitud.');
+   await delay(speed);
+  }
+ }catch(e){setMessage('Error al continuar: '+e.message);}finally{running=false;$('cuStart').disabled=false;$('cuContinue').disabled=false;$('cuStop').disabled=true;try{await refresh();}catch(e){setMessage(e.message);}}
+}
+async function submit(ev){ev.preventDefault();if(running)return;running=true;cancel=false;$('cuStart').disabled=true;$('cuStop').disabled=false;const batch=$('cuBatch').value.trim(),transfer=$('cuType').value==='transfer',max=Number($('cuMax').value),speed=Number($('cuSpeed').value);try{
+ if(!batch)throw Error('Indica el lote');if(!Number.isInteger(max)||max<1||max>30)throw Error('Elige de 1 a 30 rondas');
+ await refresh();if((state.pending_transactions||[]).length)throw Error('Hay una transacción pendiente. Pulsa «Continuar pendiente» o «Reiniciar demo de farmacia»; no vuelvas a enviarla.');const prior=owners(batch);if(transfer&&!prior.some(Boolean))throw Error('Registra y confirma primero este lote.');
+ if(transfer){const confirmed=owner(batch);if(confirmed&&$('cuSender').value!==confirmed){$('cuSender').value=confirmed;setMessage('Emisor ajustado al custodio confirmado por cuórum: '+confirmed);}}const path=transfer?'/batches/transfer':'/batches/register';const payload=transfer?{batch_id:batch,sender_id:$('cuSender').value,receiver_id:$('cuReceiver').value}:{batch_id:batch,medicine_name:$('cuMedicine').value.trim(),quantity:Number($('cuQuantity').value)};
+ await api(path,payload);history.unshift(`${transfer?'TRANSFERENCIA':'REGISTRO'} solicitado: ${batch} · pendiente`);await refresh();$('cuResult').textContent='Pendiente';phase('Transacción en mempool',0,max);setMessage('Solicitud firmada y pendiente. Iniciando rondas reales de HotStuff…');
+ for(const id of chosenNodes()){await api('/disconnect',{node_id:id});history.unshift(`Ataque: desconectado ${id}`);}await refresh();
+ for(let i=1;i<=max&&!cancel;i++){
+  const result=await api('/round',{});draw(result);phase(`Vista ${result.view} · ${result.leader}`,i,max);
+  const now=owners(batch),expected=transfer?payload.receiver_id:'laboratory';const committed=owner(batch)===expected;
+  const stillPending=(result.pending_transactions||[]).some(t=>String(t.batch_id)===batch);
+  history.unshift(`Ronda ${i} · vista ${result.view} · QC observados ${eventCount('QC_FORMED')} · ${committed?'custodia confirmada':stillPending?'pendiente':'sin confirmación de la operación'}`);draw(result);
+  if(committed&&!stillPending){$('cuResult').textContent='✓ Confirmado';phase('Commit confirmado en los validadores',i,max);setMessage(`${batch}: custodia confirmada = ${expected} por cuórum (${now.filter(v=>v===expected).length}/${now.length}). Los nodos atrasados pueden sincronizarse sin bloquear el consenso.`);break;}
+  if(online()<result.quorum){$('cuResult').textContent='Sin cuórum';setMessage(`Solo ${online()}/${result.nodes.length} nodos activos. No se puede confirmar la operación; restaura los nodos para reanudar.`);break;}
+  if(i===max){$('cuResult').textContent='Pendiente';setMessage(`No hay confirmación tras ${max} rondas. Puedes aumentar el límite y continuar la simulación.`);}
+  await delay(speed);
+ }
+ if(cancel)setMessage('Ejecución detenida; la transacción puede seguir pendiente.');
+ }catch(e){$('cuResult').textContent='Error';setMessage('Error: '+e.message);}finally{running=false;$('cuStart').disabled=false;$('cuStop').disabled=true;try{await refresh();}catch(e){setMessage('No se pudo actualizar: '+e.message);}}}
+function init(){if(!$('cuForm'))return;$('cuType').addEventListener('change',typeChange);$('cuForm').addEventListener('submit',submit);$('cuStop').addEventListener('click',()=>{cancel=true;});$('cuRefresh').addEventListener('click',async()=>{try{await refresh();targets();}catch(e){setMessage(e.message);}});$('cuRestore').addEventListener('click',restore);$('cuResetAll').addEventListener('click',resetPharmacy);$('cuContinue').addEventListener('click',continuePending);$('liveNormal')?.addEventListener('click',()=>setTimeout(()=>refresh().catch(()=>{}),700));$('liveReset')?.addEventListener('click',()=>setTimeout(()=>refresh().then(targets).catch(()=>{}),700));typeChange();refresh().then(targets).catch(e=>setMessage('No se pudo conectar: '+e.message));}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
+<style>.intro-compare{margin-top:16px;padding:18px;border:1px solid #365671;border-radius:14px;background:#0b2035}.intro-compare h3{margin-top:0}.intro-compare-table{overflow-x:auto}.intro-compare table{width:100%;border-collapse:collapse;min-width:650px}.intro-compare th,.intro-compare td{text-align:left;vertical-align:top;padding:12px;border-bottom:1px solid #365671;font-size:13px}.intro-compare th{color:#5be1d1}.intro-compare td:first-child{font-weight:700;color:#f2f6fb}</style>
+<script>(function(){'use strict';const $=id=>document.getElementById(id);const safe=t=>String(t??'—');async function compare(){try{const r=await fetch('/api/simulation',{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);const payload=await r.json();const s=payload.state||payload;const ns=s.nodes||[],es=s.events||[],quorum=s.quorum||3;const nOnline=ns.filter(n=>n.online).length;const count=type=>es.filter(e=>e.event===type).length;$('cmpQuorum').textContent=ns.length+' validadores · cuórum '+quorum+' · conectados '+nOnline;$('cmpQC').textContent=count('PROPOSED')+' propuestas y '+count('QC_FORMED')+' QC observados (historial disponible)';$('cmpCommit').textContent=count('COMMITTED')+' eventos COMMITTED; '+count('TX_COMMITTED')+' eventos TX_COMMITTED (pueden repetirse por validador)';$('cmpNodes').textContent=nOnline+'/'+ns.length+' conectados; '+(nOnline>=quorum?'cuórum de nodos disponibles':'sin cuórum de nodos disponibles')+'; disponibilidad no garantiza progreso';const maps=s.custody_by_node||{};const batches=[...new Set(Object.values(maps).flatMap(m=>Object.keys(m||{})))];$('cmpCustody').textContent=batches.length?batches.map(batch=>{const votes={};for(const n of ns){const owner=maps[n.id]?.[batch];if(owner)votes[owner]=(votes[owner]||0)+1;}const entry=Object.entries(votes).find(([,v])=>v>=quorum);return batch+': '+(entry?entry[0]+' ('+entry[1]+'/'+ns.length+' réplicas)':'sin acuerdo de '+quorum+' réplicas');}).join(' · '):'Sin lotes confirmados en las réplicas';$('cmpAttacks').textContent=count('VOTE_REJECTED')+' votos rechazados observados; '+count('NODE_DISCONNECTED')+' desconexiones registradas. Sin prueba de equivocación salvo ejecución explícita.';$('cmpStatus').textContent='Actualizado · vista '+safe(s.view);}catch(e){$('cmpStatus').textContent='No se pudo consultar el motor: '+e.message;}}$('cmpRefresh')?.addEventListener('click',compare);compare();})();</script>
+<style>
+.pl-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:14px;margin-top:14px}.pl-box{background:#0b2035;border:1px solid #365671;border-radius:12px;padding:15px;min-width:0}.pl-box h3{margin:0 0 12px}.pl-trace{max-height:260px;overflow:auto}.pl-event{display:grid;grid-template-columns:115px 1fr;gap:10px;padding:9px 0;border-bottom:1px solid #294860;font-size:12px}.pl-event b{color:#5be1d1}.pl-row{padding:9px 0;border-bottom:1px solid #294860;font-size:13px}.pl-node{display:inline-block;margin:4px 4px 0 0;padding:5px 7px;border:1px solid #45617c;border-radius:7px;font-size:11px}.pl-node.lag{border-color:#ffb36b;color:#ffd29d}@media(max-width:850px){.pl-grid{grid-template-columns:1fr}}
+</style><script>
+(function(){'use strict';const el=id=>document.getElementById(id);const escape=s=>String(s??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));async function render(){try{const r=await fetch('/api/simulation',{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);const p=await r.json(),s=p.state||p,ev=(s.events||[]).slice(-20).reverse();el('plTrace').innerHTML=ev.length?ev.map(e=>'<div class="pl-event"><b>'+escape(e.event||e.type)+'</b><span>'+escape(e.node_id||e.node||'')+' '+escape(e.batch_id||e.block_id||e.block_hash||'')+'</span></div>').join(''):'Sin eventos recientes';const ns=s.nodes||[],maps=s.custody_by_node||{},q=s.quorum||3,batches=[...new Set(Object.values(maps).flatMap(v=>Object.keys(v||{})))];el('plCustody').innerHTML=batches.length?batches.map(batch=>{const counts={};ns.forEach(n=>{const owner=maps[n.id]?.[batch];if(owner)counts[owner]=(counts[owner]||0)+1});const [owner,votes]=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]||['—',0];return '<div class="pl-row"><strong>'+escape(batch)+'</strong> · '+(votes>=q?'Cuórum '+votes+'/'+ns.length+' · '+escape(owner):'Sin cuórum de custodia')+'<div>'+ns.map(n=>'<span class="pl-node '+(maps[n.id]?.[batch]!==owner?'lag':'')+'">'+escape(n.id.replace('validator-','V'))+': '+escape(maps[n.id]?.[batch]||'sin lote')+'</span>').join('')+'</div></div>'}).join(''):'No hay lotes registrados';}catch(e){el('plTrace').textContent='Motor no disponible: '+e.message;}}el('plRefresh')?.addEventListener('click',render);render();window.addEventListener('pharmachain-updated',render);
+const params=new URLSearchParams(location.search),scenario=params.get('experiment');if(scenario){const map={normal:'none',silent:'leader',twofaults:'two'};const attack=el('cuAttack');if(attack&&map[scenario]){attack.value=map[scenario];document.querySelector('#custodyDemo')?.scrollIntoView();}else if(attack){const msg=el('cuMessage');if(msg)msg.textContent='Este ataque solo se ejecuta en el laboratorio educativo; no está instrumentado en la API farmacéutica.';}}
+})();
+</script></body>
+</html>
