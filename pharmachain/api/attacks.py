@@ -33,9 +33,7 @@ def _sync_fixture():
     sim.network.reconnect(target_node)
     source_node = sim.nodes[source].node
     blocks = ancestry(source_node.blockchain.blocks, result.block_hash)
-    certificates = tuple(
-        source_node.certificates[block.block_hash] for block in blocks if block.block_hash in source_node.certificates
-    )
+    certificates = tuple(source_node.certificates[block.block_hash] for block in blocks if block.block_hash in source_node.certificates)
     if not certificates:
         raise RuntimeError("La preparación no produjo certificados")
     sim.request_sync(target_node, source, result.block_hash)

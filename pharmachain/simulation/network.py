@@ -107,12 +107,7 @@ class SimulatedNetwork:
             msg = Envelope(sender, recipient, kind, payload, self._next_id)
             ids.append(msg.message_id)
             self._log("SENT", msg)
-            if (
-                sender in self.offline
-                or recipient in self.offline
-                or (sender, recipient) in self.blocked_links
-                or self._random.random() < self.loss_rate
-            ):
+            if sender in self.offline or recipient in self.offline or (sender, recipient) in self.blocked_links or self._random.random() < self.loss_rate:
                 self._log("DROPPED", msg)
                 continue
             self._sequence += 1

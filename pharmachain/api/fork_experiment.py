@@ -103,13 +103,7 @@ def run_fork_experiment() -> dict:
     vote_matrix = [
         {
             "validator": node_id,
-            "branch": (
-                "A"
-                if branch_a.block_hash in votes_by_node.get(node_id, set())
-                else "B"
-                if branch_b.block_hash in votes_by_node.get(node_id, set())
-                else "—"
-            ),
+            "branch": ("A" if branch_a.block_hash in votes_by_node.get(node_id, set()) else "B" if branch_b.block_hash in votes_by_node.get(node_id, set()) else "—"),
             "honest": node_id != leader_id,
         }
         for node_id in sim.nodes
@@ -134,8 +128,6 @@ def run_fork_experiment() -> dict:
         "safety": audit,
         "events": sim.events[-120:],
         "limitations": (
-            "This tests a single equivocating leader and a particular delivery schedule; "
-            "it is not an exhaustive safety proof. The leader's vote collector "
-            "remains honest in this experiment."
+            "This tests a single equivocating leader and a particular delivery schedule; it is not an exhaustive safety proof. The leader's vote collector remains honest in this experiment."
         ),
     }

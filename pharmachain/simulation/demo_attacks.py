@@ -69,11 +69,7 @@ def main() -> None:
 
     report = run_scenario(args.scenario, args.rounds)
     for result in report["rounds"]:
-        print(
-            f"View {result['view']} | leader={result['leader']} "
-            f"| votes={result['votes']}/3 "
-            f"| QC={'YES' if result['qc_formed'] else 'NO'}"
-        )
+        print(f"View {result['view']} | leader={result['leader']} | votes={result['votes']}/3 | QC={'YES' if result['qc_formed'] else 'NO'}")
     print("Committed heights:", report["rounds"][-1]["committed_heights"])
 
     if args.output:

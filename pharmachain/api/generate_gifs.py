@@ -47,17 +47,7 @@ for key, (title, *steps) in SCENARIOS.items():
         for a in range(4):
             for b in range(a + 1, 4):
                 d.line((*XY[a], *XY[b]), fill="#25465e", width=3)
-        bad = (
-            [0]
-            if key == "offline_leader"
-            else [2, 3]
-            if key == "quorum_loss"
-            else [3]
-            if key in ("omit", "invalid_signature")
-            else [0]
-            if key == "equivocation"
-            else []
-        )
+        bad = [0] if key == "offline_leader" else [2, 3] if key == "quorum_loss" else [3] if key in ("omit", "invalid_signature") else [0] if key == "equivocation" else []
         active = i % 4
         for n, (x, y) in enumerate(XY):
             fill = "#713746" if n in bad else "#236b68" if n == active else "#18354d"

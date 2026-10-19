@@ -37,6 +37,4 @@ class TimeoutCertificate:
         if self.view < 1 or len(self.notices) < quorum:
             return False
         signers = [notice.validator_id for notice in self.notices]
-        return len(signers) == len(set(signers)) and all(
-            notice.view == self.view and notice.verify(public_keys) for notice in self.notices
-        )
+        return len(signers) == len(set(signers)) and all(notice.view == self.view and notice.verify(public_keys) for notice in self.notices)

@@ -198,6 +198,14 @@ class HotStuffEngine:
 
         if not leader.active:
             self.view += 1
+
+            self.emit(
+                "TIMEOUT",
+                leader_id=leader.validator_id,
+                view=current_view,
+                reason="LEADER_INACTIVE",
+            )
+
             return RoundResult(
                 current_view,
                 leader.validator_id,

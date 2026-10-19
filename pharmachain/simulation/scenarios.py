@@ -44,9 +44,7 @@ def simulate(scenario: str = "normal", rounds: int = 6, nodes: int = 4) -> dict:
                 **asdict(result),
                 "active_validators": active,
                 "quorum_required": engine.quorum,
-                "event": "qc_formed"
-                if result.qc_formed
-                else ("leader_timeout" if result.block_hash is None else "insufficient_votes"),
+                "event": "qc_formed" if result.qc_formed else ("leader_timeout" if result.block_hash is None else "insufficient_votes"),
                 "committed_height": engine.blockchain.committed_height,
                 "high_qc_hash": engine.high_qc_hash,
                 "locks": {
