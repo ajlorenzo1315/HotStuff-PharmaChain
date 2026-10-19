@@ -283,7 +283,7 @@ python -m pip install -e ".[dev]"
 python -m uvicorn pharmachain.api.dashboard:app --reload --port 8001
 ```
 
-Panel: <http://127.0.0.1:8002/>.
+Panel: <http://127.0.0.1:8001/>.
 
 Endpoints comprobados en el código de `dashboard.py`:
 
